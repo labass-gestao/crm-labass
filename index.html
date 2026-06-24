@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>LABASS CRM</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
 <style>
@@ -106,6 +107,40 @@ tr:hover td{background:#fafbfe}
 .pgto-ok{color:#059669;font-weight:700}.pgto-pend{color:#dc2626;font-weight:700}.pgto-parc{color:#d97706;font-weight:700}
 .ren-note-inp{padding:3px 7px;border:1px dashed #e2e8f0;border-radius:5px;font-size:11px;color:#475569;width:100%;min-width:100px}
 .ren-note-inp:focus{outline:none;border-color:#2d6a4f}
+
+/* ===== RESPONSIVO MOBILE ===== */
+@media(max-width:640px){
+  .hdr{flex-direction:column;align-items:flex-start;gap:8px;padding:10px 14px}
+  .hdr h1{font-size:14px}
+  .sync-bar{width:100%;justify-content:flex-start;gap:5px}
+  .sbtn{font-size:10px;padding:4px 9px}
+  .tabs{padding:0 8px}
+  .tab{padding:9px 8px;font-size:11px}
+  .wrap{padding:10px 10px}
+  .kg{grid-template-columns:repeat(2,1fr);gap:7px}
+  .kv{font-size:17px}
+  .tbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:520px}
+  .kanban{grid-template-columns:1fr;gap:6px}
+  .modal{width:100%;max-width:100%;max-height:100vh;border-radius:0;padding:16px 14px;margin:0}
+  .modal-bg{align-items:flex-end}
+  .g2,.g3{grid-template-columns:1fr}
+  .fbar{gap:4px}
+  .fb{font-size:10px;padding:3px 8px}
+  .al{flex-wrap:wrap;gap:5px}
+  .al-p{min-width:unset;text-align:left}
+  .pcard{flex-wrap:wrap}
+  .pv{margin-left:0;width:100%}
+  .fin-row{flex-direction:column;align-items:flex-start;gap:3px}
+  .add-btn{font-size:10px;padding:4px 10px}
+  .htog{width:100%}
+  .ht{flex:1;text-align:center}
+  canvas{max-height:220px!important}
+}
+@media(max-width:400px){
+  .kg{grid-template-columns:1fr}
+  .hdr h1{font-size:13px}
+}
 </style>
 </head>
 <body>
