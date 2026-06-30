@@ -56,16 +56,24 @@ tr:hover td{background:#fafbfe}
 .al-tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px}
 .tu{background:#fef2f2;color:#dc2626}.tw{background:#fffbeb;color:#d97706}
 .al-p{font-weight:800;font-size:12px;color:#1a3c28;min-width:55px;text-align:right}
-.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-@media(max-width:900px){.kanban{grid-template-columns:repeat(2,1fr)}}
-.kcol{background:#f8fafc;border-radius:8px;padding:9px}
-.kch{font-size:11px;font-weight:700;color:#475569;padding:4px 7px;margin-bottom:7px;border-radius:5px;text-align:center;background:#e9eef4}
-.kcard{background:#fff;border-radius:6px;padding:9px 11px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.05);border-left:3px solid #e2e8f0;cursor:pointer}
-.kcard:hover{box-shadow:0 2px 6px rgba(0,0,0,.1)}
-.kcard.c1{border-left-color:#3b82f6}.kcard.c2{border-left-color:#f59e0b}.kcard.c3{border-left-color:#8b5cf6}.kcard.c4{border-left-color:#10b981}
-.kn{font-weight:700;font-size:12px;color:#1e293b}.kf{font-size:10.5px;color:#94a3b8}
-.knext{font-size:11px;color:#475569;margin-top:5px;padding:3px 6px;background:#f8fafc;border-radius:4px;line-height:1.3}
-.kval{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:10.5px}
+.kanban{display:flex;gap:10px;overflow-x:auto;padding-bottom:10px;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.kpipe-col{flex:0 0 195px;background:#f8fafc;border-radius:9px;padding:9px;min-height:80px;transition:background .12s,outline .12s}
+.kpipe-col.drag-over{background:#dbeafe;outline:2px dashed #3b82f6}
+.kpipe-hdr{display:flex;align-items:center;gap:5px;margin-bottom:8px}
+.kpipe-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.kpipe-lbl{font-size:10.5px;font-weight:700;color:#475569;flex:1;line-height:1.3}
+.kpipe-cnt{background:#e2e8f0;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;color:#64748b}
+.kpipe-card{background:#fff;border-radius:7px;padding:9px 11px;margin-bottom:6px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-top:3px solid #e2e8f0;cursor:grab;user-select:none;transition:box-shadow .1s,transform .1s}
+.kpipe-card:hover{box-shadow:0 3px 10px rgba(0,0,0,.13);transform:translateY(-1px)}
+.kpipe-card.dragging{opacity:.35;cursor:grabbing;transform:none}
+.kpipe-cn{font-weight:700;font-size:12px;color:#1e293b}
+.kpipe-cf{font-size:10.5px;color:#94a3b8;margin-top:1px}
+.kpipe-next{font-size:11px;color:#475569;margin:4px 0;padding:3px 6px;background:#f8fafc;border-radius:4px;line-height:1.35}
+.parc-row{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px}
+.parc-pill{font-size:9.5px;font-weight:700;padding:2px 5px;border-radius:10px;cursor:pointer;transition:opacity .1s;white-space:nowrap}
+.parc-pill:hover{opacity:.75}
+.pp-ok{background:#dcfce7;color:#166534}.pp-nd{background:#fef2f2;color:#991b1b}.pp-fu{background:#f1f5f9;color:#64748b}
+.kpipe-foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:5px;border-top:1px solid #f1f5f9;font-size:10.5px}
 .add-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;background:#1a3c28;color:#fff;border:none;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer}
 .add-btn:hover{background:#2d6a4f}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;justify-content:center;align-items:center}
@@ -110,33 +118,64 @@ tr:hover td{background:#fafbfe}
 
 /* ===== RESPONSIVO MOBILE ===== */
 @media(max-width:640px){
+  /* Header */
   .hdr{flex-direction:column;align-items:flex-start;gap:8px;padding:10px 14px}
   .hdr h1{font-size:14px}
   .sync-bar{width:100%;justify-content:flex-start;gap:5px}
   .sbtn{font-size:10px;padding:4px 9px}
+
+  /* Tabs */
   .tabs{padding:0 8px}
   .tab{padding:9px 8px;font-size:11px}
+
+  /* Wrap */
   .wrap{padding:10px 10px}
+
+  /* KPI grid — 2 colunas no celular */
   .kg{grid-template-columns:repeat(2,1fr);gap:7px}
   .kv{font-size:17px}
+
+  /* Tabelas — scroll horizontal */
   .tbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{min-width:520px}
-  .kanban{grid-template-columns:1fr;gap:6px}
+
+  /* Kanban pipeline — scroll horizontal no mobile */
+  .kanban{gap:7px;padding-bottom:8px}
+  .kpipe-col{flex:0 0 165px}
+
+  /* Modal — full screen no celular */
   .modal{width:100%;max-width:100%;max-height:100vh;border-radius:0;padding:16px 14px;margin:0}
   .modal-bg{align-items:flex-end}
+
+  /* Grids de formulário — 1 coluna */
   .g2,.g3{grid-template-columns:1fr}
+
+  /* Filtros */
   .fbar{gap:4px}
   .fb{font-size:10px;padding:3px 8px}
+
+  /* Alertas */
   .al{flex-wrap:wrap;gap:5px}
   .al-p{min-width:unset;text-align:left}
+
+  /* Prospect cards */
   .pcard{flex-wrap:wrap}
   .pv{margin-left:0;width:100%}
+
+  /* Seção financeira */
   .fin-row{flex-direction:column;align-items:flex-start;gap:3px}
+
+  /* Botão adicionar */
   .add-btn{font-size:10px;padding:4px 10px}
+
+  /* Toggle */
   .htog{width:100%}
   .ht{flex:1;text-align:center}
+
+  /* Chart */
   canvas{max-height:220px!important}
 }
+
 @media(max-width:400px){
   .kg{grid-template-columns:1fr}
   .hdr h1{font-size:13px}
@@ -170,22 +209,32 @@ tr:hover td{background:#fafbfe}
     <div class="mf"><label>RT</label><select id="m-rt"><option value="G">Guilherme</option><option value="M">Murilo</option></select></div>
   </div>
   <div class="mf"><label>Fazenda</label><input id="m-f" type="text"></div>
-  <div class="mf"><label>Status</label>
+  <div class="mf"><label>Fase do Pipeline</label>
     <select id="m-s">
-      <option value="inicial">Inicial / Primeiro Contato</option>
-      <option value="ppc_pend">PPC Pendente</option>
-      <option value="ppc_env">PPC Enviado</option>
-      <option value="doc_pend">Documentação Pendente</option>
-      <option value="doc_env">Documentação Enviada</option>
-      <option value="aud_pend">Agendar Auditoria</option>
-      <option value="auditoria">Auditoria Agendada</option>
-      <option value="em_aud">Em Auditoria</option>
-      <option value="ag_atestado">Ag. Análise / Atestado</option>
-      <option value="atestado_ok">Atestado Emitido</option>
-      <option value="aguard">Aguardando</option>
-      <option value="cobranca">Cobrança Pendente</option>
-      <option value="concluido">Concluído</option>
-      <option value="suspenso">Suspenso</option>
+      <optgroup label="▶ Pipeline">
+        <option value="prospeccao">Prospecção</option>
+        <option value="contrato">Assinatura de Contrato</option>
+        <option value="ppc">Preencher / Enviar PPC</option>
+        <option value="ag_aud">Marcar Auditoria</option>
+        <option value="docs">Organizar Documentos</option>
+        <option value="analise">Análise / Atestado</option>
+        <option value="concluido">Concluído</option>
+        <option value="suspenso">Suspenso</option>
+      </optgroup>
+      <optgroup label="— Legado —">
+        <option value="inicial">Inicial / Primeiro Contato</option>
+        <option value="ppc_pend">PPC Pendente</option>
+        <option value="ppc_env">PPC Enviado</option>
+        <option value="doc_pend">Documentação Pendente</option>
+        <option value="doc_env">Documentação Enviada</option>
+        <option value="aud_pend">Agendar Auditoria (legado)</option>
+        <option value="auditoria">Auditoria Agendada (legado)</option>
+        <option value="em_aud">Em Auditoria (legado)</option>
+        <option value="ag_atestado">Ag. Atestado (legado)</option>
+        <option value="atestado_ok">Atestado Emitido (legado)</option>
+        <option value="aguard">Aguardando (legado)</option>
+        <option value="cobranca">Cobrança Pendente (legado)</option>
+      </optgroup>
     </select>
   </div>
   <div class="mf"><label>Próximo Passo</label><textarea id="m-p" rows="2"></textarea></div>
@@ -457,7 +506,7 @@ tr:hover td{background:#fafbfe}
 
 <script>
 'use strict';
-var TODAY=new Date('2026-06-23');
+var TODAY=new Date('2026-06-30');
 var SK='labass-crm-v3';
 function load(){try{return JSON.parse(localStorage.getItem(SK)||'{}')}catch(e){return{}}}
 function save(d){localStorage.setItem(SK,JSON.stringify(d))}
@@ -544,22 +593,105 @@ var EF_M=[
 var EF_ALL=EF_G.concat(EF_M);
 
 var PROJ_DEF=[
-  {id:'p1',n:'Dona Oracilda',f:'Faz. Sto. Antônio do Imbaúba',stage:'ag_atestado',next:'Documentação enviada — aguardando análise e emissão do Atestado de Adequação',val:4500,paid:0,rt:'G'},
-  {id:'p2',n:'Neto Franco',f:'Fazenda Liberdade',stage:'ppc_pend',next:'Revisar formulário e enviar PPC',val:4500,paid:0,rt:'G'},
-  {id:'p3',n:'Tato Franco',f:'Faz. N.Sra. de Fátima',stage:'ppc_pend',next:'Enviar PPC (contrato NP já enviado)',val:4500,paid:0,rt:'G'},
-  {id:'p4',n:'João Luiz',f:'Fazenda Furninha',stage:'ppc_pend',next:'Preencher e enviar PPC',val:5000,paid:0,rt:'G'},
-  {id:'p5',n:'Bentivoglio',f:'Fazenda Mantana',stage:'aud_pend',next:'Agendar auditoria (1ª parcela recebida)',val:4700,paid:0,rt:'G'},
-  {id:'p6',n:'Claudio Franco',f:'Faz. Bom Jesus',stage:'aguard',next:'Aguardar baixa ART — boleto pago',val:1800,paid:0,rt:'G'},
-  {id:'p7',n:'Claudio Franco',f:'Faz. Auriflama',stage:'doc_pend',next:'Enviar: certidão + IE + comprovante de vínculo',val:5500,paid:0,rt:'G'},
-  {id:'p8',n:'Antonio Ferreira',f:'Fazenda Paraíso',stage:'cobranca',next:'Cobrar saldo R$4.400 (sinal R$100 recebido)',val:4500,paid:100,rt:'G'}
+  {id:'p1',n:'Dona Oracilda',f:'Faz. Sto. Antônio do Imbaúba',stage:'analise',next:'Documentação enviada — aguardando análise e emissão do Atestado de Adequação',val:4500,paid:0,rt:'G'},
+  {id:'p2',n:'Neto Franco',f:'Fazenda Liberdade',stage:'ppc',next:'Revisar formulário e enviar PPC',val:4500,paid:1800,rt:'G',
+    parcelas:[{n:'1ª',v:1800,dt:'2026-06-01',ok:true},{n:'2ª',v:1350,dt:'2026-07-01',ok:false},{n:'3ª',v:1350,dt:'2026-08-01',ok:false}]},
+  {id:'p3',n:'Tato Franco',f:'Faz. N.Sra. de Fátima',stage:'ppc',next:'Enviar PPC (contrato NP já enviado)',val:4500,paid:1800,rt:'G',
+    parcelas:[{n:'1ª',v:1800,dt:'2026-06-01',ok:true},{n:'2ª',v:1350,dt:'2026-07-01',ok:false},{n:'3ª',v:1350,dt:'2026-08-01',ok:false}]},
+  {id:'p4',n:'João Luiz',f:'Fazenda Furninha',stage:'ppc',next:'Preencher e enviar PPC',val:5000,paid:2000,rt:'G',
+    parcelas:[{n:'1ª',v:2000,dt:'2026-06-01',ok:true},{n:'2ª',v:1500,dt:'2026-07-01',ok:false},{n:'3ª',v:1500,dt:'2026-08-01',ok:false}]},
+  {id:'p5',n:'Bentivoglio',f:'Fazenda Mantana',stage:'ag_aud',next:'Agendar auditoria (1ª parcela recebida)',val:4700,paid:0,rt:'G'},
+  {id:'p6',n:'Claudio Franco',f:'Faz. Bom Jesus',stage:'analise',next:'Aguardar baixa ART — boleto pago',val:1800,paid:0,rt:'G'},
+  {id:'p7',n:'Claudio Franco',f:'Faz. Auriflama',stage:'docs',next:'Enviar: certidão + IE + comprovante de vínculo',val:5500,paid:0,rt:'G'},
+  {id:'p8',n:'Antonio Ferreira',f:'Fazenda Paraíso',stage:'analise',next:'Cobrar saldo R$4.400 (sinal R$100 recebido)',val:4500,paid:100,rt:'G'},
+  {id:'p9',n:'—',f:"Fazenda Espelho D'Água",stage:'contrato',next:"Cobrar entrada (1ª parcela R$1.500) e solicitar formulário PPC preenchido",val:4500,paid:0,rt:'G',
+    parcelas:[{n:'1ª',v:1500,dt:'2026-07-01',ok:false},{n:'2ª',v:1500,dt:'2026-08-01',ok:false},{n:'3ª',v:1500,dt:'2026-09-01',ok:false}]}
 ];
 var SM={
   inicial:{l:'Inicial',col:'c1'},ppc_pend:{l:'PPC Pendente',col:'c1'},ppc_env:{l:'PPC Enviado',col:'c1'},doc_pend:{l:'Doc. Pendente',col:'c1'},
   doc_env:{l:'Doc. Enviada',col:'c2'},aud_pend:{l:'Ag. Auditoria',col:'c2'},auditoria:{l:'Auditoria',col:'c2'},em_aud:{l:'Em Auditoria',col:'c2'},
   ag_atestado:{l:'Ag. Atestado',col:'c3'},atestado_ok:{l:'Atestado Emitido',col:'c3'},aguard:{l:'Aguardando',col:'c3'},cobranca:{l:'Cobrança',col:'c3'},
-  concluido:{l:'Concluído',col:'c4'},suspenso:{l:'Suspenso',col:'c4'}
+  concluido:{l:'Concluído',col:'c4'},suspenso:{l:'Suspenso',col:'c4'},
+  prospeccao:{l:'Prospecção',col:'c1'},contrato:{l:'Assinatura de Contrato',col:'c1'},
+  ppc:{l:'Preencher/Enviar PPC',col:'c1'},ag_aud:{l:'Marcar Auditoria',col:'c2'},
+  docs:{l:'Organizar Documentos',col:'c2'},analise:{l:'Análise/Atestado',col:'c3'}
 };
 var KCOLS={c1:{label:'PPC / Doc'},c2:{label:'Auditoria / Doc'},c3:{label:'Análise / Atestado'},c4:{label:'Concluído'}};
+
+var PIPELINE=[
+  {key:'prospeccao',label:'Prospecção',color:'#94a3b8'},
+  {key:'contrato',label:'Assinatura de Contrato',color:'#3b82f6'},
+  {key:'ppc',label:'Preencher / Enviar PPC',color:'#f59e0b'},
+  {key:'ag_aud',label:'Marcar Auditoria',color:'#8b5cf6'},
+  {key:'docs',label:'Organizar Documentos',color:'#ec4899'},
+  {key:'analise',label:'Análise / Atestado',color:'#06b6d4'},
+  {key:'concluido',label:'Concluído',color:'#10b981'}
+];
+
+function normStage(s){
+  var MAP={
+    'inicial':'prospeccao','ppc_pend':'ppc','ppc_env':'ppc',
+    'doc_pend':'docs','doc_env':'docs',
+    'aud_pend':'ag_aud','auditoria':'ag_aud','em_aud':'ag_aud',
+    'ag_atestado':'analise','atestado_ok':'analise','aguard':'analise','cobranca':'analise',
+    'concluido':'concluido','suspenso':'concluido'
+  };
+  return MAP[s]||s;
+}
+
+function parcHtml(p){
+  var parc=p.parcelas;
+  if(!parc||!parc.length)return'';
+  var now=new Date();
+  var MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  var html='<div class="parc-row">';
+  parc.forEach(function(pr,i){
+    var dt=pr.dt?new Date(pr.dt+'T12:00:00'):null;
+    var venc=dt&&!pr.ok&&dt<now;
+    var cls=pr.ok?'pp-ok':venc?'pp-nd':'pp-fu';
+    var ico=pr.ok?'✓':venc?'!':'○';
+    var dTxt='';
+    if(!pr.ok&&pr.dt){var dp=pr.dt.split('-');dTxt=' '+dp[2]+'/'+MO[+dp[1]-1];}
+    html+='<span class="parc-pill '+cls+'" onclick="toggleParc(\''+p.id+'\','+i+',event)" title="Clique para marcar/desmarcar">'+ico+' '+pr.n+' R$'+Number(pr.v).toLocaleString('pt-BR')+dTxt+'</span>';
+  });
+  return html+'</div>';
+}
+
+function toggleParc(projId,idx,ev){
+  ev.stopPropagation();
+  var d=load();
+  var proj=getProj().filter(function(x){return x.id===projId;})[0];
+  if(!proj)return;
+  var parc=(proj.parcelas||[]).map(function(pr){return Object.assign({},pr);});
+  if(!parc[idx])return;
+  parc[idx].ok=!parc[idx].ok;
+  var paid=parc.reduce(function(s,pr){return s+(pr.ok?pr.v:0);},0);
+  if(!d[projId])d[projId]={};
+  d[projId].parcelas=parc;
+  d[projId].paid=paid;
+  save(d);
+  buildExec();
+  toast(parc[idx].ok?'✓ Parcela marcada como paga':'Parcela desmarcada');
+}
+
+var _dragId=null;
+function kdragStart(e,id){
+  _dragId=id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+function kdragEnd(e){e.currentTarget.classList.remove('dragging');}
+function kdragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
+function kdrop(e,colEl,stage){
+  e.preventDefault();
+  document.querySelectorAll('.kpipe-col').forEach(function(c){c.classList.remove('drag-over');});
+  if(!_dragId)return;
+  sE(_dragId,'stage',stage);
+  var pipe=PIPELINE.filter(function(p){return p.key===stage;})[0];
+  _dragId=null;
+  buildExec();
+  toast('→ '+(pipe?pipe.label:stage));
+}
 
 var TRANS_DEF=[
   {id:'td01',dt:'2025-06-20',dtr:'2025-06-20',cl:'Maercio',desc:'Lab Brucelose 600 animais',tp:'entrada',cat:'laboratorio',vl:3000,st:'recebido',rt:'G',obs:''},
@@ -691,21 +823,52 @@ function buildExec(){
     }).join('');
   }
   document.getElementById('exec-urg-sec').innerHTML=uHtml;
-  var cols={c1:[],c2:[],c3:[],c4:[]};
-  ativos.forEach(function(p){var sm=SM[p.stage];cols[sm?sm.col:'c1'].push(p);});
-  document.getElementById('kanban').innerHTML=Object.keys(KCOLS).map(function(ck){
-    var col=KCOLS[ck];var cards=cols[ck];
-    return'<div class="kcol"><div class="kch">'+col.label+' <span style="background:#fff;border-radius:10px;padding:0 5px;font-size:10px">'+cards.length+'</span></div>'+
-      cards.map(function(p){return'<div class="kcard '+ck+'" onclick="openMod(\''+p.id+'\')">' +
-        '<div class="kn">'+p.n+rtB(p.rt)+'</div><div class="kf">'+rl(p.f,28)+'</div>'+
-        '<div class="knext">'+rl(gE(p.id,'next',p.next),70)+'</div>'+
-        '<div class="kval"><span class="b" style="font-size:10px;padding:1px 6px;background:#f1f5f9;color:#475569">'+(SM[p.stage]?SM[p.stage].l:p.stage)+'</span><span class="mpend">'+curr(+p.val-(+p.paid))+'</span></div>'+
-      '</div>';}).join('')+
-      (cards.length===0?'<div class="empty" style="padding:12px;text-align:center;font-size:11px">—</div>':'')+
+
+  // ——— Kanban Pipeline com Drag & Drop ———
+  var pcols={};
+  PIPELINE.forEach(function(pipe){pcols[pipe.key]=[];});
+  proj.forEach(function(p){
+    var k=normStage(p.stage);
+    if(!pcols[k])k='analise';
+    pcols[k].push(p);
+  });
+
+  document.getElementById('kanban').innerHTML=PIPELINE.map(function(pipe){
+    var cards=pcols[pipe.key]||[];
+    return '<div class="kpipe-col"'+
+      ' ondragover="kdragOver(event)"'+
+      ' ondragenter="this.classList.add(\'drag-over\')"'+
+      ' ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove(\'drag-over\')"'+
+      ' ondrop="kdrop(event,this,\''+pipe.key+'\')">'+
+      '<div class="kpipe-hdr">'+
+        '<div class="kpipe-dot" style="background:'+pipe.color+'"></div>'+
+        '<div class="kpipe-lbl">'+pipe.label+'</div>'+
+        '<div class="kpipe-cnt">'+cards.length+'</div>'+
+      '</div>'+
+      cards.map(function(p){
+        var aRec=+p.val-(+p.paid);
+        return '<div class="kpipe-card" style="border-top-color:'+pipe.color+'"'+
+          ' draggable="true"'+
+          ' ondragstart="kdragStart(event,\''+p.id+'\')"'+
+          ' ondragend="kdragEnd(event)"'+
+          ' onclick="openMod(\''+p.id+'\')">' +
+          '<div class="kpipe-cn">'+p.n+rtB(p.rt)+'</div>'+
+          '<div class="kpipe-cf">'+rl(p.f,26)+'</div>'+
+          '<div class="kpipe-next">'+rl(p.next,65)+'</div>'+
+          parcHtml(p)+
+          '<div class="kpipe-foot"><span></span><span class="mpend">'+curr(aRec)+'</span></div>'+
+        '</div>';
+      }).join('')+
+      (cards.length===0?'<div style="text-align:center;color:#cbd5e1;font-size:11px;padding:12px 0">—</div>':'')+
     '</div>';
   }).join('');
-  var cobr=ativos.filter(function(p){return +p.paid<+p.val;});
-  document.getElementById('cobrancas').innerHTML=cobr.length?cobr.map(function(p){return'<div class="cbr" onclick="openMod(\''+p.id+'\')"><div class="cbr-n"><div class="cbr-nm">'+p.n+' — '+p.f+'</div><div class="cbr-d">'+(SM[p.stage]?SM[p.stage].l:p.stage)+'</div></div><div class="cbr-v">'+curr(+p.val-(+p.paid))+'</div></div>';}).join(''):'<div class="empty">Nenhuma cobrança pendente</div>';
+
+  var cobr=proj.filter(function(p){return +p.paid<+p.val&&normStage(p.stage)!=='concluido';});
+  document.getElementById('cobrancas').innerHTML=cobr.length?cobr.map(function(p){
+    var pipe=PIPELINE.filter(function(pp){return pp.key===normStage(p.stage);})[0];
+    var stLbl=pipe?pipe.label:(SM[p.stage]?SM[p.stage].l:p.stage);
+    return'<div class="cbr" onclick="openMod(\''+p.id+'\')"><div class="cbr-n"><div class="cbr-nm">'+p.n+' — '+p.f+'</div><div class="cbr-d">'+stLbl+'</div></div><div class="cbr-v">'+curr(+p.val-(+p.paid))+'</div></div>';
+  }).join(''):'<div class="empty">Nenhuma cobrança pendente</div>';
 }
 
 function openMod(id){
