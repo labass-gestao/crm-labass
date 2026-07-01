@@ -204,6 +204,14 @@ tr:hover td{background:#fafbfe}
 .mes-btn.on{background:#1a3c28;color:#fff;border-color:#1a3c28}
 .mes-sep-hdr{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;padding:8px 0 4px;border-top:1px solid #f1f5f9;margin-top:6px}
 .ent{color:#059669;font-weight:700}.sai{color:#dc2626;font-weight:700}.mneu{color:#94a3b8}
+.urg-pick{position:relative;display:inline-block}
+.urg-pick-btn{font-size:10px;padding:3px 8px;background:#1a3c28;color:#fff;border:none;border-radius:10px;cursor:pointer;white-space:nowrap;font-weight:700}
+.urg-pick-btn:hover{background:#2d6a4f}
+.urg-drop{display:none;position:absolute;right:0;top:22px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.13);z-index:999;min-width:180px;padding:4px 0}
+.urg-drop.open{display:block}
+.urg-drop-item{padding:6px 14px;font-size:11px;cursor:pointer;color:#1e293b;display:flex;align-items:center;gap:6px}
+.urg-drop-item:hover{background:#f0fdf4}
+.urg-drop-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -1035,14 +1043,22 @@ function buildExec(){
       if(a!==null&&a<=30)parts.push('ART vence '+fmtDMY(e.art)+' ('+(a<0?'vencida '+Math.abs(a)+'d':a+'d')+') &middot; R$1.800');
       if(t!==null&&t<=60)parts.push('Atestado vence '+fmtDMY(e.ates)+' ('+(t<0?'vencido '+Math.abs(t)+'d':t+'d')+') &middot; R$3.200');
       var ei=EF_ALL.indexOf(e);
-      return'<div class="al urg" draggable="true"'+
-        ' ondragstart="kdragEf(event,'+ei+')"'+
-        ' ondragend="this.classList.remove(\'dragging\')">'+ 
+      var stageOpts=PIPELINE.filter(function(pp){return pp.key!=='concluido';}).map(function(pp){
+        return'<div class="urg-drop-item" onclick="criarDeUrgencia('+ei+',\''+pp.key+'\');this.closest(\'.urg-drop\').classList.remove(\'open\')">'+ 
+          '<span class="urg-drop-dot" style="background:'+pp.color+'"></span>'+pp.label+'</div>';
+      }).join('');
+      return'<div class="al urg">'+ 
         '<div class="al-dot urg"></div>'+ 
         '<div style="flex:1"><div class="al-n">'+tc(e.p)+rtB(e.rt)+'</div>'+ 
         '<div class="al-d">'+tc(e.f)+' &middot; '+tc(e.m)+'</div></div>'+ 
-        '<div style="font-size:11px;color:#dc2626;text-align:right">'+parts.join('<br>')+'</div>'+ 
-        '</div>';
+        '<div style="display:flex;align-items:center;gap:10px">'+ 
+          '<div style="font-size:11px;color:#dc2626;text-align:right">'+parts.join('<br>')+'</div>'+ 
+          '<div class="urg-pick">'+ 
+            '<button class="urg-pick-btn" onclick="this.nextSibling.classList.toggle(\'open\')">+ Projeto ▾</button>'+ 
+            '<div class="urg-drop">'+stageOpts+'</div>'+ 
+          '</div>'+ 
+        '</div>'+ 
+      '</div>';
     }).join('');
   }
   document.getElementById('exec-urg-sec').innerHTML=uHtml;
@@ -1163,6 +1179,25 @@ function registrarRecebimento(){
   closeMod();buildExec();
   toast('R$'+vl.toLocaleString('pt-BR')+' registrado no Financeiro');
 }
+function criarDeUrgencia(efIdx, stage){
+  // close any open dropdowns
+  document.querySelectorAll('.urg-drop.open').forEach(function(d){d.classList.remove('open');});
+  var ef=EF_ALL[efIdx];
+  if(!ef)return;
+  var id='cx-'+Date.now();
+  var pipe=PIPELINE.filter(function(p){return p.key===stage;})[0];
+  var obj={id:id,n:ef.p,f:ef.f,stage:stage,next:'',val:0,paid:0,rt:ef.rt,_ts:new Date().toISOString()};
+  var d=load();d[id]=obj;save(d);
+  buildExec();
+  openMod(id);
+  toast('Projeto criado — '+(pipe?pipe.label:stage));
+}
+// close dropdowns when clicking outside
+document.addEventListener('click',function(ev){
+  if(!ev.target.closest('.urg-pick')){
+    document.querySelectorAll('.urg-drop.open').forEach(function(d){d.classList.remove('open');});
+  }
+});
 function closeMod(){document.getElementById('mb').classList.remove('on');}
 function saveMod(){
   var id=document.getElementById('m-id').value;var isNew=id.startsWith('cx');
