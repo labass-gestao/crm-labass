@@ -194,6 +194,16 @@ tr:hover td{background:#fafbfe}
 .kpi-mo .kv{font-size:17px;font-weight:800;color:#1e293b;margin-top:3px}
 .kpi-mo .kv-sub{font-size:9.5px;color:#94a3b8;margin-top:1px}
 .kg{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.kpi-mes{background:#fff;border-radius:8px;padding:10px 14px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-top:3px solid #2d6a4f}
+.kpi-mes.ativo{border-top-color:#f59e0b;box-shadow:0 2px 8px rgba(245,158,11,.2)}
+.kpi-mes .kl{font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
+.kpi-mes .kv{font-size:16px;font-weight:800;color:#1e293b;margin-top:2px}
+.kpi-mes .kv2{font-size:10.5px;color:#64748b;margin-top:1px}
+.mes-sel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.mes-btn{padding:3px 10px;border-radius:12px;border:1px solid #e2e8f0;background:#f8fafc;font-size:11px;font-weight:600;cursor:pointer;color:#64748b;white-space:nowrap}
+.mes-btn.on{background:#1a3c28;color:#fff;border-color:#1a3c28}
+.mes-sep-hdr{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;padding:8px 0 4px;border-top:1px solid #f1f5f9;margin-top:6px}
+.ent{color:#059669;font-weight:700}.sai{color:#dc2626;font-weight:700}.mneu{color:#94a3b8}
 </style>
 </head>
 <body>
@@ -1204,25 +1214,82 @@ function saveLMod(){
 }
 function delExame(){var id=document.getElementById('lm-id').value;saveExames(getExames().filter(function(e){return e.id!==id;}));closeLMod();buildLab();}
 
+var finMes='cur';
+var MNF=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function getFinMesKey(mes){
+  if(mes==='cur')return TODAY.toISOString().slice(0,7);
+  return mes;
+}
 function buildFinKPIs(){
   var trans=getTrans();
-  var ent=trans.filter(function(t){return t.tp==='entrada';}).reduce(function(s,t){return s+(+t.vl);},0);
-  var sai=trans.filter(function(t){return t.tp==='saida';}).reduce(function(s,t){return s+(+t.vl);},0);
-  var toRec=trans.filter(function(t){return t.tp==='entrada'&&(t.st==='a_receber'||t.st==='parcial');}).reduce(function(s,t){return s+(+t.vl);},0);
+  var today=TODAY.toISOString().slice(0,7);
+
+  // build list of months with data
+  var moSet={};
+  trans.forEach(function(t){if(t.dt)moSet[t.dt.slice(0,7)]=1;});
+  var moKeys=Object.keys(moSet).sort().reverse();
+
+  // month selector buttons
+  var selHtml='<div class="mes-sel">';
+  selHtml+='<button class="mes-btn'+(finMes==='todos'?' on':'')+'" onclick="finMes=\'todos\';buildTransTable()">Todos</button>';
+  moKeys.forEach(function(k){
+    var p=k.split('-');var lbl=MNF[+p[1]-1]+'/'+p[0].slice(2);
+    var isCur=k===today;
+    selHtml+='<button class="mes-btn'+(finMes===k||(isCur&&finMes==='cur')?' on':'')+'"'+(isCur?' style="border-color:#f59e0b"':'');
+    selHtml+=' onclick="finMes=\''+k+'\';buildTransTable()">'+(isCur?'★ ':'')+lbl+'</button>';
+  });
+  selHtml+='</div>';
+
+  // filter trans for selected month
+  var selKey=finMes==='cur'?today:finMes;
+  var tFil=finMes==='todos'?trans:trans.filter(function(t){return t.dt&&t.dt.slice(0,7)===selKey;});
+  var ent=tFil.filter(function(t){return t.tp==='entrada'&&t.st==='recebido';}).reduce(function(s,t){return s+(+t.vl);},0);
+  var sai=tFil.filter(function(t){return t.tp==='saida';}).reduce(function(s,t){return s+(+t.vl);},0);
+  var aRec=tFil.filter(function(t){return t.tp==='entrada'&&(t.st==='a_receber'||t.st==='parcial');}).reduce(function(s,t){return s+(+t.vl);},0);
+  var saldo=ent-sai;
+  var mesLabel=finMes==='todos'?'Todos os períodos':(finMes==='cur'?'Mês Atual':'Mês selecionado');
+
+  // monthly summary table (last 6 months)
+  var sumKeys=moKeys.slice(0,6).reverse();
+  var sumHtml='<div class="mes-sep-hdr">Resumo por Mês</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+  sumKeys.forEach(function(k){
+    var p=k.split('-');var lbl=MNF[+p[1]-1]+'/'+p[0].slice(2);
+    var mt=trans.filter(function(t){return t.dt&&t.dt.slice(0,7)===k;});
+    var me=mt.filter(function(t){return t.tp==='entrada'&&t.st==='recebido';}).reduce(function(s,t){return s+(+t.vl);},0);
+    var ms=mt.filter(function(t){return t.tp==='saida';}).reduce(function(s,t){return s+(+t.vl);},0);
+    var mr=mt.filter(function(t){return t.tp==='entrada'&&(t.st==='a_receber'||t.st==='parcial');}).reduce(function(s,t){return s+(+t.vl);},0);
+    var isCur=k===today;
+    var isSel=(finMes===k||(isCur&&finMes==='cur'));
+    sumHtml+='<div class="kpi-mes'+(isCur?' ativo':'')+'" style="cursor:pointer;'+(isSel?'outline:2px solid #f59e0b;':'')+' min-width:110px"';
+    sumHtml+=' onclick="finMes=\''+k+'\';buildTransTable()">';
+    sumHtml+='<div class="kl">'+(isCur?'★ ':'')+lbl+'</div>';
+    sumHtml+='<div class="kv ent">'+curr(me)+'</div>';
+    sumHtml+='<div class="kv2">'+(ms?'<span class="sai">-'+curr(ms)+'</span> ':'')+(mr?'<span style="color:#d97706">⏳ '+curr(mr)+'</span>':'')+'</div>';
+    sumHtml+='</div>';
+  });
+  sumHtml+='</div>';
+
   document.getElementById('k-fin').innerHTML=
-    '<div class="kpi g2"><div class="kl">Total Entradas</div><div class="kv" style="font-size:16px">'+curr(ent)+'</div></div>'+
-    '<div class="kpi r"><div class="kl">Total Saídas</div><div class="kv" style="font-size:16px">'+curr(sai)+'</div></div>'+
-    '<div class="kpi"><div class="kl">Saldo</div><div class="kv" style="font-size:16px;color:'+(ent-sai>=0?'#166534':'#dc2626')+'">'+curr(ent-sai)+'</div></div>'+
-    '<div class="kpi y"><div class="kl">A Receber</div><div class="kv" style="font-size:16px">'+curr(toRec)+'</div></div>';
+    selHtml+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap">'+ 
+    '<div class="kpi g2"><div class="kl">Entradas — '+mesLabel+'</div><div class="kv" style="font-size:16px">'+curr(ent)+'</div></div>'+
+    '<div class="kpi r"><div class="kl">Saídas — '+mesLabel+'</div><div class="kv" style="font-size:16px">'+curr(sai)+'</div></div>'+
+    '<div class="kpi"><div class="kl">Saldo — '+mesLabel+'</div><div class="kv" style="font-size:16px;color:'+(saldo>=0?'#166534':'#dc2626')+'">'+curr(saldo)+'</div></div>'+
+    '<div class="kpi y"><div class="kl">A Receber — '+mesLabel+'</div><div class="kv" style="font-size:16px">'+curr(aRec)+'</div></div>'+
+    '</div>'+
+    sumHtml;
 }
 function buildTransTable(){
   buildFinKPIs();
   var trans=getTrans();
+  var today2=TODAY.toISOString().slice(0,7);
+  var selKey2=finMes==='cur'?today2:finMes;
   var filtered=trans.filter(function(t){
     var ok=true;
-    if(finTp==='entrada')ok=t.tp==='entrada';
-    else if(finTp==='saida')ok=t.tp==='saida';
-    else if(finTp==='a_receber')ok=(t.st==='a_receber'||t.st==='parcial');
+    if(finMes!=='todos')ok=t.dt&&t.dt.slice(0,7)===selKey2;
+    if(ok&&finTp==='entrada')ok=t.tp==='entrada';
+    else if(ok&&finTp==='saida')ok=t.tp==='saida';
+    else if(ok&&finTp==='a_receber')ok=(t.st==='a_receber'||t.st==='parcial');
     if(ok&&finRt!=='todos')ok=t.rt===finRt;
     if(ok&&finCat!=='todos')ok=t.cat===finCat;
     return ok;
