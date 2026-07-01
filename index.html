@@ -275,6 +275,7 @@ tr:hover td{background:#fafbfe}
     <div class="mf"><label>Receita Total (R$)</label><input id="m-v" type="number" min="0"></div>
     <div class="mf"><label>Recebido (R$)</label><input id="m-r" type="number" min="0"></div>
   </div>
+  <div class="mf"><label>Data de Cobrança</label><input id="m-cobr" type="date"></div>
   <div id="m-parc-sec" style="display:none;border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px">
     <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px">Registrar Recebimento</div>
     <div id="m-parc-list" style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px"></div>
@@ -744,17 +745,7 @@ function kdropRen(e,stage,tipo){
   if(idx>=0){all[idx].stage=stage;saveRenProjAll(all);}
   buildExecRen();_dragRenId=null;
 }
-function buildExecRen(){
-  var all=getRenProj().filter(function(p){return p.stage!=='deleted';});
-  var artItems=all.filter(function(p){return p.tipo==='art';});
-  var atesItems=all.filter(function(p){return p.tipo==='atestado';});
-  var nArt=buildRenKanban('kanban-ren-art',PIPE_REN_ART,artItems,'art');
-  var nAtes=buildRenKanban('kanban-ren-ates',PIPE_REN_ATES,atesItems,'atestado');
-  var ea=document.getElementById('cnt-ren-art');
-  var eb=document.getElementById('cnt-ren-ates');
-  ea.textContent=nArt;ea.style.display=nArt?'':'none';
-  eb.textContent=nAtes;eb.style.display=nAtes?'':'none';
-}
+function buildExecRen(){/* disabled - renovation kanban removed */}
 function openRenMod(id,tipo){
   var all=getRenProj();
   var it=id?all.filter(function(x){return x.id===id;})[0]:null;
@@ -1038,7 +1029,8 @@ function buildExec(){
   var urg=EF_ALL.filter(function(e){var a=daysTo(e.art),t=daysTo(e.ates);return(a!==null&&a<=30)||(t!==null&&t<=60);});
   var uHtml='';
   if(urg.length){
-    uHtml='<div class="st">Urgências eFazenda</div><div class="urg-drag-hint">Arraste para o kanban abaixo ↓</div>'+urg.map(function(e){
+    var projFazendas=proj.map(function(p){return p.f.toLowerCase();});
+    uHtml='<div class="st">Urgências eFazenda</div>'+urg.map(function(e){
       var a=daysTo(e.art),t=daysTo(e.ates);var parts=[];
       if(a!==null&&a<=30)parts.push('ART vence '+fmtDMY(e.art)+' ('+(a<0?'vencida '+Math.abs(a)+'d':a+'d')+') &middot; R$1.800');
       if(t!==null&&t<=60)parts.push('Atestado vence '+fmtDMY(e.ates)+' ('+(t<0?'vencido '+Math.abs(t)+'d':t+'d')+') &middot; R$3.200');
@@ -1047,7 +1039,8 @@ function buildExec(){
         return'<div class="urg-drop-item" onclick="criarDeUrgencia('+ei+',\''+pp.key+'\');this.closest(\'.urg-drop\').classList.remove(\'open\')">'+ 
           '<span class="urg-drop-dot" style="background:'+pp.color+'"></span>'+pp.label+'</div>';
       }).join('');
-      return'<div class="al urg">'+ 
+      var jaEmAnd=projFazendas.indexOf(e.f.toLowerCase())>=0;
+      return'<div class="al urg" style="'+(jaEmAnd?'background:#f0fdf4;border-left-color:#059669':'')+'">'+ 
         '<div class="al-dot urg"></div>'+ 
         '<div style="flex:1"><div class="al-n">'+tc(e.p)+rtB(e.rt)+'</div>'+ 
         '<div class="al-d">'+tc(e.f)+' &middot; '+tc(e.m)+'</div></div>'+ 
@@ -1086,14 +1079,19 @@ function buildExec(){
       '</div>'+
       cards.map(function(p){
         var aRec=+p.val-(+p.paid);
+          var cobrDtV=gE(p.id,'cobrDt',p.cobrDt||'');
+          var cobrHtml=cobrDtV?'<div style="font-size:10px;color:#d97706;margin-top:3px">📅 Cobrar: '+fmtDMY(cobrDtV)+'</div>':'';
+          var efMatch=EF_ALL.filter(function(ef){return ef.f.toLowerCase()===p.f.toLowerCase()||ef.p.toLowerCase()===p.n.toLowerCase();});
+          var urgBadge=efMatch.length?'<span style="font-size:9px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:8px;padding:1px 5px;margin-left:4px">⚠ eFazenda</span>':'';
         return '<div class="kpipe-card" style="border-top-color:'+pipe.color+'"'+
           ' draggable="true"'+
           ' ondragstart="kdragStart(event,\''+p.id+'\')"'+
           ' ondragend="kdragEnd(event)"'+
           ' onclick="openMod(\''+p.id+'\')">' +
-          '<div class="kpipe-cn">'+p.n+rtB(p.rt)+'</div>'+
+          '<div class="kpipe-cn">'+p.n+rtB(p.rt)+urgBadge+'</div>'+
           '<div class="kpipe-cf">'+rl(p.f,26)+'</div>'+
           '<div class="kpipe-next">'+rl(p.next,65)+'</div>'+
+          cobrHtml+
           parcHtml(p)+
           '<div class="kpipe-foot"><span></span><span class="mpend">'+curr(aRec)+'</span></div>'+
         '</div>';
@@ -1121,6 +1119,7 @@ function openMod(id){
   document.getElementById('m-v').value=p?p.val:0;
   document.getElementById('m-r').value=p?p.paid:0;
   document.getElementById('m-rt').value=p?p.rt:'G';
+  document.getElementById('m-cobr').value=gE(id,'cobrDt',p?p.cobrDt||'':'');
   document.getElementById('m-del').style.display=id?'':'none';
   document.getElementById('m-recv-dt').value=new Date().toISOString().slice(0,10);
   document.getElementById('m-recv-v').value='';
@@ -1201,7 +1200,7 @@ document.addEventListener('click',function(ev){
 function closeMod(){document.getElementById('mb').classList.remove('on');}
 function saveMod(){
   var id=document.getElementById('m-id').value;var isNew=id.startsWith('cx');
-  var obj={id:id,n:document.getElementById('m-n').value,f:document.getElementById('m-f').value,stage:document.getElementById('m-s').value,next:document.getElementById('m-p').value,val:+document.getElementById('m-v').value,paid:+document.getElementById('m-r').value,rt:document.getElementById('m-rt').value,_ts:new Date().toISOString()};
+  var obj={id:id,n:document.getElementById('m-n').value,f:document.getElementById('m-f').value,stage:document.getElementById('m-s').value,next:document.getElementById('m-p').value,val:+document.getElementById('m-v').value,paid:+document.getElementById('m-r').value,rt:document.getElementById('m-rt').value,cobrDt:document.getElementById('m-cobr').value,_ts:new Date().toISOString()};
   var d=load();if(isNew)d[id]=obj;else{if(!d[id])d[id]={};Object.assign(d[id],obj);}save(d);
   closeMod();buildExec();toast('Projeto salvo');
 }
