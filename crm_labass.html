@@ -1191,6 +1191,7 @@ function renderParcEditor(){
       '<input type="number" value="'+pr.v+'" onchange="_editParc['+i+'].v=+this.value" placeholder="R$">'+ 
       '<input type="date" value="'+(pr.dt||'')+'" onchange="_editParc['+i+'].dt=this.value">'+ 
       (pr.ok?'<span style="color:#059669;font-size:11px;font-weight:700">✓ Pago</span>':'')+ 
+      (pr.ok?'<button class="parc-rm" style="background:#fef3c7;color:#92400e" onclick="_editParc['+i+'].ok=false;renderParcEditor()">Estornar</button>':'')+ 
       (!pr.ok?'<button class="parc-rm" onclick="_editParc.splice('+i+',1);renderParcEditor()">✕</button>':'')+ 
     '</div>';
   }).join('');
