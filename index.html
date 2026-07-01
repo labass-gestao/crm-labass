@@ -1015,7 +1015,19 @@ function buildDC(){
 function buildExec(){
   var proj=getProj();var ativos=proj.filter(function(p){return p.stage!=='concluido'&&p.stage!=='suspenso';});
   var toRec=ativos.reduce(function(s,p){return s+(+p.val-(+p.paid));},0);
-  var urgN=EF_ALL.filter(function(e){var a=daysTo(e.art),t=daysTo(e.ates);return(a!==null&&a<=30)||(t!==null&&t<=60);}).length;
+  var todayStr=TODAY.toISOString().slice(0,10);
+  var vencidas=0;
+  ativos.forEach(function(p){
+    var parc=p.parcelas||[];
+    var cobrDtV=gE(p.id,'cobrDt',p.cobrDt||'');
+    if(parc.length){
+      parc.forEach(function(pr){if(!pr.ok&&pr.dt&&pr.dt<todayStr)vencidas+=+pr.v;});
+    } else {
+      var rem=+p.val-(+p.paid);
+      if(rem>0&&cobrDtV&&cobrDtV<todayStr)vencidas+=rem;
+    }
+  });
+  var urgN=EF_ALL.filter(function(e){var a=daysTo(e.art),t=daysTo(e.ates);return(a!==null&&a<=90)||(t!==null&&t<=90);}).length;
   // Monthly forecast from parcelas
   var MN=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   var moMap={};
@@ -1053,13 +1065,14 @@ function buildExec(){
   if(semData>0)moCards+='<div class="kpi-mo"><div class="kl">Sem data</div><div class="kv">'+curr(semData)+'</div><div class="kv-sub">A definir</div></div>';
   document.getElementById('k-exec').innerHTML=
     '<div class="kpi b"><div class="kl">Projetos Ativos</div><div class="kv">'+ativos.length+'</div></div>'+
+    (vencidas>0?'<div class="kpi r" style="cursor:pointer" title="Parcelas/cobranças vencidas"><div class="kl">⚠ A cobrar (vencido)</div><div class="kv" style="font-size:15px">'+curr(vencidas)+'</div></div>':'')+
     moCards+
-    '<div class="kpi r"><div class="kl">Urgências eFazenda</div><div class="kv">'+urgN+'</div></div>';
-  var urg=EF_ALL.filter(function(e){var a=daysTo(e.art),t=daysTo(e.ates);return(a!==null&&a<=30)||(t!==null&&t<=60);});
+    '<div class="kpi r"><div class="kl">Renovações (90d)</div><div class="kv">'+urgN+'</div></div>';
+  var urg=EF_ALL.filter(function(e){var a=daysTo(e.art),t=daysTo(e.ates);return(a!==null&&a<=90)||(t!==null&&t<=90);});
   var uHtml='';
   if(urg.length){
     var projFazendas=proj.map(function(p){return p.f.toLowerCase();});
-    uHtml='<div class="st">Urgências eFazenda</div>'+urg.map(function(e){
+    uHtml='<div class="st">Renovações eFazenda (próximos 90 dias)</div>'+urg.map(function(e){
       var a=daysTo(e.art),t=daysTo(e.ates);var parts=[];
       if(a!==null&&a<=30)parts.push('ART vence '+fmtDMY(e.art)+' ('+(a<0?'vencida '+Math.abs(a)+'d':a+'d')+') &middot; R$1.800');
       if(t!==null&&t<=60)parts.push('Atestado vence '+fmtDMY(e.ates)+' ('+(t<0?'vencido '+Math.abs(t)+'d':t+'d')+') &middot; R$3.200');
