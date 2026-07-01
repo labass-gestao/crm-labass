@@ -242,6 +242,7 @@ tr:hover td{background:#fafbfe}
         <option value="ag_aud">Marcar Auditoria</option>
         <option value="docs">Organizar Documentos</option>
         <option value="analise">Análise / Atestado</option>
+        <option value="art">Assinatura ART</option>
         <option value="concluido">Concluído</option>
         <option value="suspenso">Suspenso</option>
       </optgroup>
@@ -265,6 +266,15 @@ tr:hover td{background:#fafbfe}
   <div class="g2">
     <div class="mf"><label>Receita Total (R$)</label><input id="m-v" type="number" min="0"></div>
     <div class="mf"><label>Recebido (R$)</label><input id="m-r" type="number" min="0"></div>
+  </div>
+  <div id="m-parc-sec" style="display:none;border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px">
+    <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px">Registrar Recebimento</div>
+    <div id="m-parc-list" style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px"></div>
+    <div class="g2">
+      <div class="mf"><label>Valor (R$)</label><input id="m-recv-v" type="number" min="0" placeholder="0,00"></div>
+      <div class="mf"><label>Data do Recebimento</label><input id="m-recv-dt" type="date"></div>
+    </div>
+    <button class="mbtn pri" style="width:100%;margin-bottom:6px" onclick="registrarRecebimento()">✓ Registrar no Financeiro</button>
   </div>
   <div class="mbtn-row">
     <button class="mbtn sec" onclick="closeMod()">Cancelar</button>
@@ -665,6 +675,7 @@ var PIPELINE=[
   {key:'ag_aud',label:'Marcar Auditoria',color:'#8b5cf6'},
   {key:'docs',label:'Organizar Documentos',color:'#ec4899'},
   {key:'analise',label:'Análise / Atestado',color:'#06b6d4'},
+  {key:'art',label:'Assinatura ART',color:'#8b5cf6'},
   {key:'concluido',label:'Concluído',color:'#10b981'}
 ];
 
@@ -785,7 +796,7 @@ function normStage(s){
     'doc_pend':'docs','doc_env':'docs',
     'aud_pend':'ag_aud','auditoria':'ag_aud','em_aud':'ag_aud',
     'ag_atestado':'analise','atestado_ok':'analise','aguard':'analise','cobranca':'analise',
-    'concluido':'concluido','suspenso':'concluido'
+    'art':'art','concluido':'concluido','suspenso':'concluido'
   };
   return MAP[s]||s;
 }
@@ -821,8 +832,17 @@ function toggleParc(projId,idx,ev){
   d[projId].parcelas=parc;
   d[projId].paid=paid;
   save(d);
+  if(parc[idx].ok){
+    var tid='tr-'+Date.now();
+    var dt=parc[idx].dt||new Date().toISOString().slice(0,10);
+    var todayStr=new Date().toISOString().slice(0,10);
+    var newT={id:tid,dt:dt,dtr:todayStr,tp:'entrada',cl:proj.n+(proj.f?' — '+proj.f:''),desc:'Parc. '+parc[idx].n+' — '+proj.n,vl:parc[idx].v,st:'recebido',cat:'consultoria',rt:proj.rt||'G',obs:'',_ts:new Date().toISOString()};
+    var trans=getTrans();trans.unshift(newT);
+    trans.sort(function(a,b){return b.dt.localeCompare(a.dt);});
+    saveTrans(trans);
+    toast('✓ Pago + lançado no Financeiro');
+  } else { toast('Parcela desmarcada'); }
   buildExec();
-  toast(parc[idx].ok?'✓ Parcela marcada como paga':'Parcela desmarcada');
 }
 
 var _dragId=null;
@@ -1086,7 +1106,62 @@ function openMod(id){
   document.getElementById('m-r').value=p?p.paid:0;
   document.getElementById('m-rt').value=p?p.rt:'G';
   document.getElementById('m-del').style.display=id?'':'none';
+  document.getElementById('m-recv-dt').value=new Date().toISOString().slice(0,10);
+  document.getElementById('m-recv-v').value='';
+  var parcSec=document.getElementById('m-parc-sec');
+  var parcList=document.getElementById('m-parc-list');
+  if(p&&p.parcelas&&p.parcelas.length){
+    parcSec.style.display='';
+    var MO2=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    parcList.innerHTML=p.parcelas.map(function(pr,i){
+      var dp=pr.dt?pr.dt.split('-'):null;
+      var dtLbl=dp?' ('+dp[2]+'/'+MO2[+dp[1]-1]+')'  :'';
+      var ok=pr.ok;
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:5px;background:'+(ok?'#f0fdf4':'#fef2f2')+'">'+
+        '<span style="font-size:11px;font-weight:700;color:'+(ok?'#059669':'#dc2626')+'">'+
+        (ok?'✓':'○')+' '+pr.n+' — R$'+Number(pr.v).toLocaleString('pt-BR')+dtLbl+'</span>'+
+        (!ok?'<button style="font-size:10px;padding:2px 8px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="selecionarParcela('+i+')">Selecionar</button>':'<span style="font-size:10px;color:#64748b">Pago</span>')+
+      '</div>';
+    }).join('');
+  } else {
+    parcSec.style.display='';
+    parcList.innerHTML='';
+  }
   document.getElementById('mb').classList.add('on');
+}
+function selecionarParcela(idx){
+  var id=document.getElementById('m-id').value;
+  var proj=getProj().filter(function(x){return x.id===id;})[0];
+  if(!proj||!proj.parcelas)return;
+  var pr=proj.parcelas[idx];
+  document.getElementById('m-recv-v').value=pr.v;
+  document.getElementById('m-recv-dt').value=pr.dt||new Date().toISOString().slice(0,10);
+  document.getElementById('m-recv-v').focus();
+}
+function registrarRecebimento(){
+  var id=document.getElementById('m-id').value;
+  var vl=+document.getElementById('m-recv-v').value;
+  var dt=document.getElementById('m-recv-dt').value;
+  if(!vl||!dt){toast('Preencha valor e data');return;}
+  var proj=getProj().filter(function(x){return x.id===id;})[0];
+  if(!proj)return;
+  var d=load();
+  var parc=(proj.parcelas||[]).map(function(pr){return Object.assign({},pr);});
+  for(var i=0;i<parc.length;i++){
+    if(!parc[i].ok&&+parc[i].v===vl){parc[i].ok=true;break;}
+  }
+  var paid=parc.length?parc.reduce(function(s,pr){return s+(pr.ok?pr.v:0);},0):(+(proj.paid||0))+vl;
+  if(!d[id])d[id]={};
+  if(parc.length)d[id].parcelas=parc;
+  d[id].paid=paid;
+  save(d);
+  var tid='tr-'+Date.now();
+  var newT={id:tid,dt:dt,dtr:dt,tp:'entrada',cl:proj.n+(proj.f?' — '+proj.f:''),desc:'Recebimento — '+proj.n+(proj.f?' / '+proj.f:''),vl:vl,st:'recebido',cat:'consultoria',rt:proj.rt||'G',obs:'',_ts:new Date().toISOString()};
+  var trans=getTrans();trans.unshift(newT);
+  trans.sort(function(a,b){return b.dt.localeCompare(a.dt);});
+  saveTrans(trans);
+  closeMod();buildExec();
+  toast('R$'+vl.toLocaleString('pt-BR')+' registrado no Financeiro');
 }
 function closeMod(){document.getElementById('mb').classList.remove('on');}
 function saveMod(){
