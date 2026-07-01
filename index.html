@@ -1001,16 +1001,24 @@ function buildExec(){
   var semData=0;
   ativos.forEach(function(p){
     var parc=p.parcelas||[];
+    var cobrDtV=gE(p.id,'cobrDt',p.cobrDt||'');
     if(parc.length){
       parc.forEach(function(pr){
         if(pr.ok)return;
         var key=pr.dt?pr.dt.slice(0,7):'';
-        if(!key){semData+=pr.v;return;}
+        if(!key){
+          if(cobrDtV)moMap[cobrDtV.slice(0,7)]=(moMap[cobrDtV.slice(0,7)]||0)+pr.v;
+          else semData+=pr.v;
+          return;
+        }
         moMap[key]=(moMap[key]||0)+pr.v;
       });
     } else {
       var rem=+p.val-(+p.paid);
-      if(rem>0)semData+=rem;
+      if(rem>0){
+        if(cobrDtV)moMap[cobrDtV.slice(0,7)]=(moMap[cobrDtV.slice(0,7)]||0)+rem;
+        else semData+=rem;
+      }
     }
   });
   var today=TODAY.toISOString().slice(0,7);
@@ -1018,7 +1026,7 @@ function buildExec(){
   var moCards=moKeys.map(function(k){
     var parts=k.split('-');var lbl=MN[+parts[1]-1]+'/'+parts[0].slice(2);
     var cls=k<today?'past':k===today?'cur':'';
-    var sub=k<today?'Atrasado':k===today?'Este mês':'A vencer';
+    var sub=k<today?'Atrasado':k===today?'Este mês':'A receber';
     return'<div class="kpi-mo '+cls+'"><div class="kl">'+lbl+'</div><div class="kv">'+curr(moMap[k])+'</div><div class="kv-sub">'+sub+'</div></div>';
   }).join('');
   if(semData>0)moCards+='<div class="kpi-mo"><div class="kl">Sem data</div><div class="kv">'+curr(semData)+'</div><div class="kv-sub">A definir</div></div>';
