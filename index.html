@@ -115,6 +115,10 @@ tr:hover td{background:#fafbfe}
 .pgto-ok{color:#059669;font-weight:700}.pgto-pend{color:#dc2626;font-weight:700}.pgto-parc{color:#d97706;font-weight:700}
 .ren-note-inp{padding:3px 7px;border:1px dashed #e2e8f0;border-radius:5px;font-size:11px;color:#475569;width:100%;min-width:100px}
 .ren-note-inp:focus{outline:none;border-color:#2d6a4f}
+.initren-btn{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap}
+.initren-btn:hover{background:#dcfce7}
+.ren-tipo-art .kpipe-card{border-top-color:#f59e0b!important}
+.ren-tipo-ates .kpipe-card{border-top-color:#8b5cf6!important}
 
 /* ===== RESPONSIVO MOBILE ===== */
 @media(max-width:640px){
@@ -338,6 +342,24 @@ tr:hover td{background:#fafbfe}
   </div>
 </div></div>
 
+<!-- MODAL RENOVAÇÃO -->
+<div class="modal-bg" id="rmb" onclick="if(event.target===this)closeRenMod()">
+<div class="modal">
+  <h2 id="rmtit">Renovação</h2><input type="hidden" id="rm-id"><input type="hidden" id="rm-tipo">
+  <div class="g2">
+    <div class="mf"><label>Produtor</label><input id="rm-n" type="text"></div>
+    <div class="mf"><label>RT</label><select id="rm-rt"><option value="G">Guilherme</option><option value="M">Murilo</option></select></div>
+  </div>
+  <div class="mf"><label>Fazenda</label><input id="rm-f" type="text"></div>
+  <div class="mf"><label>Etapa</label><select id="rm-s"></select></div>
+  <div class="mf"><label>Próximo Passo</label><textarea id="rm-p" rows="2"></textarea></div>
+  <div class="mbtn-row">
+    <button class="mbtn sec" onclick="closeRenMod()">Cancelar</button>
+    <button class="mbtn danger" id="rm-del" onclick="delRenProj()">Excluir</button>
+    <button class="mbtn pri" onclick="saveRenMod()">Salvar</button>
+  </div>
+</div></div>
+
 <!-- MODAL PROSPECÇÃO -->
 <div class="modal-bg" id="pmb" onclick="if(event.target===this)closePMod()">
 <div class="modal">
@@ -398,6 +420,16 @@ tr:hover td{background:#fafbfe}
     <button class="add-btn" onclick="openMod()">+ Novo Projeto</button>
   </div>
   <div class="kanban" id="kanban"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 7px">
+    <div class="st" style="margin:0;flex:1">Renovação ART em Andamento <span class="bdg" id="cnt-ren-art">0</span></div>
+    <button class="add-btn" style="margin-left:10px" onclick="openRenMod(null,'art')">+ Nova Renov. ART</button>
+  </div>
+  <div class="kanban ren-tipo-art" id="kanban-ren-art"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 7px">
+    <div class="st" style="margin:0;flex:1">Renovação Atestado em Andamento <span class="bdg" id="cnt-ren-ates">0</span></div>
+    <button class="add-btn" style="margin-left:10px" onclick="openRenMod(null,'atestado')">+ Nova Renov. Atestado</button>
+  </div>
+  <div class="kanban ren-tipo-ates" id="kanban-ren-ates"></div>
   <div class="st">Cobranças Pendentes</div>
   <div id="cobrancas"></div>
 </div>
@@ -415,7 +447,7 @@ tr:hover td{background:#fafbfe}
     <button class="fb" data-group="ren-rt" onclick="setFB(this,'ren-rt');renRT='M';buildRen()">Murilo</button>
   </div>
   <div class="tbl"><table>
-    <thead><tr><th>RT</th><th>Produtor</th><th>Fazenda</th><th>Município</th><th>Venc. ART</th><th>Venc. Atestado</th><th>Situação</th><th>Nota</th></tr></thead>
+    <thead><tr><th>RT</th><th>Produtor</th><th>Fazenda</th><th>Município</th><th>Venc. ART</th><th>Venc. Atestado</th><th>Situação</th><th>Nota</th><th>Iniciar</th></tr></thead>
     <tbody id="ren-tb"></tbody>
   </table></div>
 </div>
@@ -627,6 +659,117 @@ var PIPELINE=[
   {key:'analise',label:'Análise / Atestado',color:'#06b6d4'},
   {key:'concluido',label:'Concluído',color:'#10b981'}
 ];
+var PIPE_REN_ART=[
+  {key:'rart_renovar',label:'Renovar ART',color:'#f59e0b'},
+  {key:'rart_assin',label:'Coletar Assinaturas',color:'#3b82f6'},
+  {key:'rart_ok',label:'Finalizado',color:'#10b981'}
+];
+var PIPE_REN_ATES=[
+  {key:'rates_ag',label:'Agendar Auditoria',color:'#8b5cf6'},
+  {key:'rates_ppc',label:'Preencher PPC',color:'#f59e0b'},
+  {key:'rates_docs',label:'Organizar Docs',color:'#ec4899'},
+  {key:'rates_analise',label:'Análise / Atestado',color:'#06b6d4'},
+  {key:'rates_ok',label:'Finalizado',color:'#10b981'}
+];
+function getRenProj(){return (load()['_ren_proj']||[]);}
+function saveRenProjAll(arr){var d=load();d['_ren_proj']=arr;save(d);}
+function buildRenKanban(elId,pipe,items,tipo){
+  var pcols={};pipe.forEach(function(p){pcols[p.key]=[];});
+  items.forEach(function(it){var k=it.stage;if(!pcols[k])k=pipe[0].key;pcols[k].push(it);});
+  var active=items.filter(function(it){return it.stage!==pipe[pipe.length-1].key;});
+  document.getElementById(elId).innerHTML=pipe.map(function(p){
+    var cards=pcols[p.key]||[];
+    return'<div class="kpipe-col"'+
+      ' ondragover="kdragOver(event)"'+
+      ' ondragenter="this.classList.add(\'drag-over\')"'+
+      ' ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove(\'drag-over\')"'+
+      ' ondrop="kdropRen(event,\''+p.key+'\',\''+tipo+'\')">'+
+      '<div class="kpipe-hdr">'+
+        '<div class="kpipe-dot" style="background:'+p.color+'"></div>'+
+        '<div class="kpipe-lbl">'+p.label+'</div>'+
+        '<div class="kpipe-cnt">'+cards.length+'</div>'+
+      '</div>'+
+      cards.map(function(it){
+        return'<div class="kpipe-card" style="border-top-color:'+p.color+'"'+
+          ' draggable="true"'+
+          ' ondragstart="kdragStartRen(event,\''+it.id+'\',\''+tipo+'\')'+'"'+
+          ' ondragend="kdragEnd(event)"'+
+          ' onclick="openRenMod(\''+it.id+'\',\''+tipo+'\')">'+
+          '<div class="kpipe-cn">'+it.n+rtB(it.rt)+'</div>'+
+          '<div class="kpipe-cf">'+rl(it.f,28)+'</div>'+
+          (it.next?'<div class="kpipe-next">'+rl(it.next,65)+'</div>':'')+
+        '</div>';
+      }).join('')+
+      (cards.length===0?'<div style="text-align:center;color:#cbd5e1;font-size:11px;padding:12px 0">—</div>':'')+
+    '</div>';
+  }).join('');
+  return active.length;
+}
+var _dragRenId=null,_dragRenTipo=null;
+function kdragStartRen(e,id,tipo){_dragRenId=id;_dragRenTipo=tipo;e.currentTarget.classList.add('dragging');}
+function kdropRen(e,stage,tipo){
+  e.preventDefault();
+  document.querySelectorAll('.kpipe-col').forEach(function(c){c.classList.remove('drag-over');});
+  if(!_dragRenId||_dragRenTipo!==tipo)return;
+  var all=getRenProj();var idx=all.findIndex(function(x){return x.id===_dragRenId;});
+  if(idx>=0){all[idx].stage=stage;saveRenProjAll(all);}
+  buildExecRen();_dragRenId=null;
+}
+function buildExecRen(){
+  var all=getRenProj().filter(function(p){return p.stage!=='deleted';});
+  var artItems=all.filter(function(p){return p.tipo==='art';});
+  var atesItems=all.filter(function(p){return p.tipo==='atestado';});
+  var nArt=buildRenKanban('kanban-ren-art',PIPE_REN_ART,artItems,'art');
+  var nAtes=buildRenKanban('kanban-ren-ates',PIPE_REN_ATES,atesItems,'atestado');
+  document.getElementById('cnt-ren-art').textContent=nArt;
+  document.getElementById('cnt-ren-ates').textContent=nAtes;
+  if(!nArt)document.getElementById('cnt-ren-art').style.display='none';
+  else document.getElementById('cnt-ren-art').style.display='';
+  if(!nAtes)document.getElementById('cnt-ren-ates').style.display='none';
+  else document.getElementById('cnt-ren-ates').style.display='';
+}
+function openRenMod(id,tipo){
+  var all=getRenProj();
+  var it=id?all.filter(function(x){return x.id===id;})[0]:null;
+  var t=tipo||(it?it.tipo:'art');
+  document.getElementById('rmtit').textContent=(t==='art'?'Renovação ART':'Renovação Atestado')+(it?' — Editar':' — Nova');
+  document.getElementById('rm-id').value=id||'re-'+Date.now();
+  document.getElementById('rm-tipo').value=t;
+  document.getElementById('rm-n').value=it?it.n:'';
+  document.getElementById('rm-f').value=it?it.f:'';
+  document.getElementById('rm-rt').value=it?it.rt:'G';
+  document.getElementById('rm-p').value=it?it.next:'';
+  var pipe=t==='art'?PIPE_REN_ART:PIPE_REN_ATES;
+  var sel=document.getElementById('rm-s');
+  sel.innerHTML=pipe.map(function(p){return'<option value="'+p.key+'">'+(p.label)+'</option>';}).join('');
+  if(it)sel.value=it.stage;
+  document.getElementById('rm-del').style.display=id?'':'none';
+  document.getElementById('rmb').classList.add('on');
+}
+function closeRenMod(){document.getElementById('rmb').classList.remove('on');}
+function saveRenMod(){
+  var id=document.getElementById('rm-id').value;
+  var tipo=document.getElementById('rm-tipo').value;
+  var obj={id:id,tipo:tipo,n:document.getElementById('rm-n').value,f:document.getElementById('rm-f').value,rt:document.getElementById('rm-rt').value,stage:document.getElementById('rm-s').value,next:document.getElementById('rm-p').value,_ts:new Date().toISOString()};
+  var all=getRenProj();var idx=all.findIndex(function(x){return x.id===id;});
+  if(idx>=0)all[idx]=obj;else all.push(obj);
+  saveRenProjAll(all);closeRenMod();buildExecRen();toast('Renovação salva');
+}
+function delRenProj(){
+  var id=document.getElementById('rm-id').value;
+  var all=getRenProj().filter(function(x){return x.id!==id;});
+  saveRenProjAll(all);closeRenMod();buildExecRen();toast('Removido');
+}
+function initRenFromEf(p,f,rt,tipo){
+  var id='re-'+Date.now();
+  var pipe=tipo==='art'?PIPE_REN_ART:PIPE_REN_ATES;
+  var obj={id:id,tipo:tipo,n:p,f:f,rt:rt,stage:pipe[0].key,next:'',_ts:new Date().toISOString()};
+  var all=getRenProj();all.push(obj);
+  saveRenProjAll(all);
+  T('exec',document.querySelector('.tab:nth-child(2)'));
+  buildExecRen();
+  toast('→ Movido para Em Execução');
+}
 
 function normStage(s){
   var MAP={
@@ -869,6 +1012,7 @@ function buildExec(){
     var stLbl=pipe?pipe.label:(SM[p.stage]?SM[p.stage].l:p.stage);
     return'<div class="cbr" onclick="openMod(\''+p.id+'\')"><div class="cbr-n"><div class="cbr-nm">'+p.n+' — '+p.f+'</div><div class="cbr-d">'+stLbl+'</div></div><div class="cbr-v">'+curr(+p.val-(+p.paid))+'</div></div>';
   }).join(''):'<div class="empty">Nenhuma cobrança pendente</div>';
+  buildExecRen();
 }
 
 function openMod(id){
@@ -906,8 +1050,10 @@ function buildRen(){
   document.getElementById('ren-tb').innerHTML=rows.map(function(e){
     var key='rnote_'+e.f.replace(/\W/g,'');
     var note=gE(key,'v','');
+    var ep=e.p.replace(/'/g,"\\'");var ef=e.f.replace(/'/g,"\\'");
     return'<tr><td>'+rtB(e.rt)+'</td><td><strong>'+tc(e.p)+'</strong></td><td>'+tc(e.f)+'</td><td>'+tc(e.m)+'</td><td>'+dcCell(e.art,'art')+'</td><td>'+dcCell(e.ates,'ates')+'</td><td>'+stb[efStat(e)]+'</td>'+
-      '<td><input class="ren-note-inp" value="'+note.replace(/"/g,'&quot;')+'" placeholder="Nota..." onblur="saveNote(\''+key+'\',this.value)"></td></tr>';
+      '<td><input class="ren-note-inp" value="'+note.replace(/"/g,'&quot;')+'" placeholder="Nota..." onblur="saveNote(\''+key+'\',this.value)"></td>'+
+      '<td style="white-space:nowrap"><button class="initren-btn" onclick="initRenFromEf(\''+ep+'\',\''+ef+'\',\''+e.rt+'\',\'art\')">▶ ART</button> <button class="initren-btn" style="background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe" onclick="initRenFromEf(\''+ep+'\',\''+ef+'\',\''+e.rt+'\',\'atestado\')">▶ Atestado</button></td></tr>';
   }).join('');
 }
 function saveNote(key,val){sE(key,'v',val);toast('Nota salva');}
@@ -1053,93 +1199,4 @@ function openTMod(id){
   document.getElementById('tm-dtr').value=t?t.dtr:'';
   document.getElementById('tm-tp').value=t?t.tp:'entrada';
   document.getElementById('tm-cl').value=t?t.cl:'';
-  document.getElementById('tm-desc').value=t?t.desc:'';
-  document.getElementById('tm-vl').value=t?t.vl:'';
-  document.getElementById('tm-st').value=t?t.st:'recebido';
-  document.getElementById('tm-cat').value=t?t.cat:'consultoria';
-  document.getElementById('tm-rt').value=t?t.rt:'G';
-  document.getElementById('tm-obs').value=t?t.obs:'';
-  document.getElementById('tm-del').style.display=id?'':'none';
-  document.getElementById('tmb').classList.add('on');
-}
-function openTModSaida(){openTMod();setTimeout(function(){document.getElementById('tm-tp').value='saida';},10);}
-function closeTMod(){document.getElementById('tmb').classList.remove('on');}
-function saveTMod(){
-  var id=document.getElementById('tm-id').value;
-  var obj={id:id,dt:document.getElementById('tm-dt').value,dtr:document.getElementById('tm-dtr').value,tp:document.getElementById('tm-tp').value,cl:document.getElementById('tm-cl').value,desc:document.getElementById('tm-desc').value,vl:+document.getElementById('tm-vl').value,st:document.getElementById('tm-st').value,cat:document.getElementById('tm-cat').value,rt:document.getElementById('tm-rt').value,obs:document.getElementById('tm-obs').value,_ts:new Date().toISOString()};
-  var trans=getTrans();var idx=trans.findIndex(function(t){return t.id===id;});
-  if(idx>=0)trans[idx]=obj;else trans.unshift(obj);
-  trans.sort(function(a,b){return b.dt.localeCompare(a.dt);});
-  saveTrans(trans);closeTMod();buildTransTable();toast('Movimentação salva');
-}
-function delTrans(){var id=document.getElementById('tm-id').value;saveTrans(getTrans().filter(function(t){return t.id!==id;}));closeTMod();buildTransTable();}
-
-function showFin(tab){
-  ['np','lab','fut'].forEach(function(s){document.getElementById('fin-'+s).style.display=s===tab?'':'none';});
-  document.getElementById('ht-np').classList.toggle('on',tab==='np');
-  document.getElementById('ht-lab2').classList.toggle('on',tab==='lab');
-  document.getElementById('ht-fut').classList.toggle('on',tab==='fut');
-  if(tab==='np')buildFinNP();
-  if(tab==='lab')buildFinLab();
-  if(tab==='fut'&&!CD.fin){CD.fin=true;requestAnimationFrame(buildFC);}
-}
-function buildFinNP(){
-  var rows=[
-    {n:'Tato Franco — Faz. Santo Expedito',recv:3500,pend:0},{n:'Neto Franco — Faz. N.Sra.Aparecida',recv:3800,pend:0},
-    {n:'Alegrete',recv:4000,pend:0},{n:'Paulo Sergio — Faz. Primavera',recv:4800,pend:0},
-    {n:'Adriana Queiroz — Faz. Conquista',recv:4000,pend:0},{n:'Munir — Faz. São Gabriel',recv:2800,pend:0},
-    {n:'Renata — Faz. Santo Antonio',recv:1750,pend:0},{n:'Renata — Faz. Santa Fé',recv:1750,pend:0},
-    {n:'Eli Ferreira — Faz. Vô Olympio (Murilo)',recv:5000,pend:0},{n:'Renovação Marcos Ribeiro (Murilo)',recv:1800,pend:0},
-    {n:'Renovação Luiz Antonio (Murilo)',recv:1800,pend:0},{n:'Antonio Ferreira — Faz. Paraíso (sinal)',recv:100,pend:4400},
-    {n:'Dona Oracilda — Ag. Atestado',recv:0,pend:4500},{n:'Neto Franco — Fazenda Liberdade',recv:0,pend:4500},
-    {n:'Tato Franco — Faz. N.Sra. de Fátima',recv:0,pend:4500},{n:'João Luiz — Fazenda Furninha',recv:0,pend:5000},
-    {n:'Bentivoglio — Fazenda Mantana',recv:0,pend:4700},{n:'Claudio Franco — Faz. Auriflama',recv:0,pend:5500},
-    {n:'Claudio Franco — Faz. Bom Jesus (baixa ART)',recv:0,pend:1800}
-  ];
-  document.getElementById('fin-np-rows').innerHTML=
-    '<div class="fin-row" style="background:#f8fafc;font-size:10px;font-weight:700;color:#64748b"><span>Projeto</span><div style="display:grid;grid-template-columns:90px 90px;gap:4px;text-align:right"><span>Recebido</span><span>A Receber</span></div></div>'+
-    rows.map(function(r,i){return'<div class="fin-row" style="'+(i%2===0?'background:#fafbfe':'')+'"><div class="fr-left">'+r.n+'</div><div style="display:grid;grid-template-columns:90px 90px;gap:4px;text-align:right"><span class="'+(r.recv>0?'mok':'mneu')+'">'+(r.recv?curr(r.recv):'—')+'</span><span class="'+(r.pend>0?'mpend':'mneu')+'">'+(r.pend?curr(r.pend):'—')+'</span></div></div>';}).join('');
-}
-function buildFinLab(){
-  var ex=getExames();var byYM={};
-  ex.forEach(function(e){if(!e.dt)return;var p=e.dt.split('-');var k=p[0]+'-'+p[1];if(!byYM[k])byYM[k]={bruta:0,custo:0,lucro:0,pend:0};byYM[k].bruta+=+e.vl;byYM[k].custo+=+e.cu;byYM[k].lucro+=+e.lu;if(e.pg!=='pago')byYM[k].pend+=+e.vl;});
-  var MN=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  document.getElementById('fin-lab-rows').innerHTML=
-    '<div class="fin-row" style="background:#f8fafc;font-size:10px;font-weight:700;color:#64748b"><span>Mês</span><div style="display:grid;grid-template-columns:80px 80px 80px 80px;gap:4px;text-align:right"><span>Receita</span><span>Custo</span><span>Lucro</span><span>A Receber</span></div></div>'+
-    Object.keys(byYM).sort().reverse().map(function(k,i){var p=k.split('-');var r=byYM[k];return'<div class="fin-row" style="'+(i%2===0?'background:#fafbfe':'')+'"><div class="fr-left">'+MN[+p[1]-1]+'/'+p[0].slice(2)+'</div><div style="display:grid;grid-template-columns:80px 80px 80px 80px;gap:4px;text-align:right"><span class="mok">'+curr(r.bruta)+'</span><span class="mpend">'+(r.custo?curr(r.custo):'—')+'</span><span class="mok">'+curr(r.lucro)+'</span><span class="'+(r.pend?'mpend':'mneu')+'">'+(r.pend?curr(r.pend):'—')+'</span></div></div>';}).join('');
-}
-function buildRevMo(){
-  var mo={};
-  function add(ds,t,amt,e){var d=pd(ds);if(!d)return;var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');if(!mo[k])mo[k]={art:[],ates:[]};mo[k][t].push({e:e,amt:amt,ds:ds});}
-  EF_ALL.forEach(function(e){if(e.art)add(e.art,'art',1800,e);if(e.ates)add(e.ates,'ates',3200,e);});
-  return mo;
-}
-var fC=null;
-function buildFC(){
-  var mo=buildRevMo();var ks=Object.keys(mo).sort().filter(function(k){return k>='2026-07';});
-  var MN=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  var MF=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  var lb=ks.map(function(k){var p=k.split('-');return MN[+p[1]-1]+'/'+p[0].slice(2);});
-  var ad=ks.map(function(k){return mo[k].art.reduce(function(s,r){return s+r.amt;},0);});
-  var td=ks.map(function(k){return mo[k].ates.reduce(function(s,r){return s+r.amt;},0);});
-  var ctx=document.getElementById('fc').getContext('2d');
-  if(fC)fC.destroy();
-  fC=new Chart(ctx,{type:'bar',data:{labels:lb,datasets:[{label:'ART R$1.800',data:ad,backgroundColor:'#3b82f6',borderRadius:3},{label:'Atestado R$3.200',data:td,backgroundColor:'#10b981',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11}}},tooltip:{callbacks:{label:function(c){return'R$ '+c.parsed.y.toLocaleString('pt-BR');}}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10}}},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return'R$'+(v/1000).toFixed(0)+'k';},font:{size:10}}}}}});
-  document.getElementById('fin-det').innerHTML=ks.map(function(k){
-    var p=k.split('-');var data=mo[k];var tot=data.art.reduce(function(s,r){return s+r.amt;},0)+data.ates.reduce(function(s,r){return s+r.amt;},0);
-    var items=data.art.map(function(r){return{t:'art',e:r.e,ds:r.ds,v:r.amt};}).concat(data.ates.map(function(r){return{t:'ates',e:r.e,ds:r.ds,v:r.amt};})).sort(function(a,b){return pd(a.ds)-pd(b.ds);});
-    return'<div class="tbl" style="margin-bottom:9px"><div class="fin-row" style="background:#f0fdf4;font-weight:700"><span style="color:#1e293b">'+MF[+p[1]-1]+' '+p[0]+'</span><span style="color:#1a3c28">'+curr(tot)+'</span></div>'+items.map(function(i){return'<div class="fin-row"><div class="fr-left">'+tc(i.e.p)+rtB(i.e.rt)+'<div class="fr-sub">'+tc(i.e.f)+' &middot; '+(i.t==='art'?'ART':'Atestado')+' '+fmtDMY(i.ds)+'</div></div><span style="font-weight:700;color:'+(i.t==='art'?'#2563eb':'#059669')+'">'+curr(i.v)+'</span></div>';}).join('')+'</div>';
-  }).join('');
-}
-
-// INIT
-ensureAll();
-var DN=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
-var MH=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-document.getElementById('hd').innerHTML='Guilherme (20 faz.) &middot; Murilo (8 faz.) &middot; '+DN[TODAY.getDay()]+', '+TODAY.getDate()+' de '+MH[TODAY.getMonth()];
-buildDash();buildRen();buildFinNP();
-requestAnimationFrame(buildDC);
-var imp=load()._import_from;if(imp)setTimeout(function(){toast('Dados de: '+imp);},500);
-</script>
-</body>
-</html>
+  document.getElementById('tm-de
