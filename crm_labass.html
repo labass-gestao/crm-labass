@@ -850,9 +850,13 @@ function toggleParc(projId,idx,ev){
   save(d);
   if(parc[idx].ok){
     var tid='tr-'+Date.now();
-    var dt=parc[idx].dt||new Date().toISOString().slice(0,10);
     var todayStr=new Date().toISOString().slice(0,10);
-    var newT={id:tid,dt:dt,dtr:todayStr,tp:'entrada',cl:proj.n+(proj.f?' — '+proj.f:''),desc:'Parc. '+parc[idx].n+' — '+proj.n,vl:parc[idx].v,st:'recebido',cat:'consultoria',rt:proj.rt||'G',obs:'',_ts:new Date().toISOString()};
+    var dt=parc[idx].dt||todayStr;
+    parc[idx].dtr=todayStr;
+    parc[idx].tid=tid;
+    d[projId].parcelas=parc;
+    save(d);
+    var newT={id:tid,dt:todayStr,dtr:todayStr,tp:'entrada',cl:proj.n+(proj.f?' — '+proj.f:''),desc:'Parc. '+parc[idx].n+' — '+proj.n,vl:parc[idx].v,st:'recebido',cat:'consultoria',rt:proj.rt||'G',obs:'',_ts:new Date().toISOString()};
     var trans=getTrans();trans.unshift(newT);
     trans.sort(function(a,b){return b.dt.localeCompare(a.dt);});
     saveTrans(trans);
@@ -1189,7 +1193,8 @@ function renderParcEditor(){
     return'<div class="parc-ed-row">'+ 
       '<input value="'+pr.n+'" onchange="_editParc['+i+'].n=this.value" style="max-width:55px" placeholder="Nº">'+ 
       '<input type="number" value="'+pr.v+'" onchange="_editParc['+i+'].v=+this.value" placeholder="R$">'+ 
-      '<input type="date" value="'+(pr.dt||'')+'" onchange="_editParc['+i+'].dt=this.value">'+ 
+      '<input type="date" value="'+(pr.dt||'')+'" title="Vencimento" onchange="_editParc['+i+'].dt=this.value">'+ 
+      (pr.ok?'<input type="date" title="Recebido em" value="'+(pr.dtr||pr.dt||'')+'" style="border-color:#059669;background:#f0fdf4" onchange="_editParc['+i+'].dtr=this.value">':'')+ 
       (pr.ok?'<span style="color:#059669;font-size:11px;font-weight:700">✓ Pago</span>':'')+ 
       (pr.ok?'<button class="parc-rm" style="background:#fef3c7;color:#92400e" onclick="_editParc['+i+'].ok=false;renderParcEditor()">Estornar</button>':'')+ 
       (!pr.ok?'<button class="parc-rm" onclick="_editParc.splice('+i+',1);renderParcEditor()">✕</button>':'')+ 
@@ -1226,15 +1231,15 @@ function registrarRecebimento(){
   if(!proj)return;
   var d=load();
   var parc=(proj.parcelas||[]).map(function(pr){return Object.assign({},pr);});
+  var tid='tr-'+Date.now();
   for(var i=0;i<parc.length;i++){
-    if(!parc[i].ok&&+parc[i].v===vl){parc[i].ok=true;break;}
+    if(!parc[i].ok&&+parc[i].v===vl){parc[i].ok=true;parc[i].dtr=dt;parc[i].tid=tid;break;}
   }
   var paid=parc.length?parc.reduce(function(s,pr){return s+(pr.ok?pr.v:0);},0):(+(proj.paid||0))+vl;
   if(!d[id])d[id]={};
   if(parc.length)d[id].parcelas=parc;
   d[id].paid=paid;
   save(d);
-  var tid='tr-'+Date.now();
   var newT={id:tid,dt:dt,dtr:dt,tp:'entrada',cl:proj.n+(proj.f?' — '+proj.f:''),desc:'Recebimento — '+proj.n+(proj.f?' / '+proj.f:''),vl:vl,st:'recebido',cat:'consultoria',rt:proj.rt||'G',obs:'',_ts:new Date().toISOString()};
   var trans=getTrans();trans.unshift(newT);
   trans.sort(function(a,b){return b.dt.localeCompare(a.dt);});
@@ -1280,6 +1285,17 @@ function saveMod(){
   var paidCalc=parcToSave.length?parcToSave.reduce(function(s,pr){return s+(pr.ok?+pr.v:0);},0):+document.getElementById('m-r').value;
   var obj={id:id,n:document.getElementById('m-n').value,f:document.getElementById('m-f').value,stage:document.getElementById('m-s').value,next:document.getElementById('m-p').value,val:+document.getElementById('m-v').value,paid:paidCalc,rt:document.getElementById('m-rt').value,cobrDt:document.getElementById('m-cobr').value,parcelas:parcToSave.length?parcToSave:undefined,_ts:new Date().toISOString()};
   var d=load();if(isNew)d[id]=obj;else{if(!d[id])d[id]={};Object.assign(d[id],obj);}save(d);
+  // update linked transactions if dtr changed
+  var trans=getTrans();
+  var changed=false;
+  parcToSave.forEach(function(pr){
+    if(pr.tid&&pr.dtr){
+      trans.forEach(function(t){
+        if(t.id===pr.tid&&t.dt!==pr.dtr){t.dt=pr.dtr;t.dtr=pr.dtr;changed=true;}
+      });
+    }
+  });
+  if(changed){trans.sort(function(a,b){return b.dt.localeCompare(a.dt);});saveTrans(trans);}
   closeMod();buildExec();toast('Projeto salvo');
 }
 function delProj(){var id=document.getElementById('m-id').value;if(id.startsWith('cx')){var d=load();delete d[id];save(d);}else sE(id,'stage','deleted');closeMod();buildExec();}
