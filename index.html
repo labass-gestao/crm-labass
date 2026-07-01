@@ -212,6 +212,12 @@ tr:hover td{background:#fafbfe}
 .urg-drop-item{padding:6px 14px;font-size:11px;cursor:pointer;color:#1e293b;display:flex;align-items:center;gap:6px}
 .urg-drop-item:hover{background:#f0fdf4}
 .urg-drop-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.parc-editor{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.parc-ed-row{display:flex;gap:6px;align-items:center}
+.parc-ed-row input{flex:1;padding:4px 7px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px}
+.parc-ed-row .parc-rm{background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;font-weight:700}
+.parc-gen-row{display:flex;gap:6px;margin-bottom:6px;align-items:flex-end;flex-wrap:wrap}
+.parc-gen-row .mf{flex:1;min-width:90px}
 </style>
 </head>
 <body>
@@ -276,6 +282,17 @@ tr:hover td{background:#fafbfe}
     <div class="mf"><label>Recebido (R$)</label><input id="m-r" type="number" min="0"></div>
   </div>
   <div class="mf"><label>Data de Cobrança</label><input id="m-cobr" type="date"></div>
+  <div id="m-parc-wrap" style="border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px">
+    <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px">Parcelas</div>
+    <div class="parc-gen-row">
+      <div class="mf"><label>Qtd</label><input id="pg-n" type="number" min="1" max="12" value="3" style="width:100%"></div>
+      <div class="mf"><label>Valor total (R$)</label><input id="pg-v" type="number" min="0" style="width:100%"></div>
+      <div class="mf"><label>1ª data</label><input id="pg-dt" type="date" style="width:100%"></div>
+      <button class="mbtn sec" style="margin-bottom:0;padding:5px 10px;font-size:11px" onclick="gerarParcelas()">Gerar</button>
+    </div>
+    <div class="parc-editor" id="parc-editor"></div>
+    <button class="mbtn sec" style="font-size:10px;padding:3px 10px;margin-top:4px" onclick="addParcRow()">+ Linha manual</button>
+  </div>
   <div id="m-parc-sec" style="display:none;border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px">
     <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px">Registrar Recebimento</div>
     <div id="m-parc-list" style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px"></div>
@@ -833,9 +850,13 @@ function toggleParc(projId,idx,ev){
   save(d);
   if(parc[idx].ok){
     var tid='tr-'+Date.now();
-    var dt=parc[idx].dt||new Date().toISOString().slice(0,10);
     var todayStr=new Date().toISOString().slice(0,10);
-    var newT={id:tid,dt:dt,dtr:todayStr,tp:'entrada',cl:proj.n+(proj.f?' — '+proj.f:''),desc:'Parc. '+parc[idx].n+' — '+proj.n,vl:parc[idx].v,st:'recebido',cat:'consultoria',rt:proj.rt||'G',obs:'',_ts:new Date().toISOString()};
+    var dt=parc[idx].dt||todayStr;
+    parc[idx].dtr=todayStr;
+    parc[idx].tid=tid;
+    d[projId].parcelas=parc;
+    save(d);
+    var newT={id:tid,dt:todayStr,dtr:todayStr,tp:'entrada',cl:proj.n+(proj.f?' — '+proj.f:''),desc:'Parc. '+parc[idx].n+' — '+proj.n,vl:parc[idx].v,st:'recebido',cat:'consultoria',rt:proj.rt||'G',obs:'',_ts:new Date().toISOString()};
     var trans=getTrans();trans.unshift(newT);
     trans.sort(function(a,b){return b.dt.localeCompare(a.dt);});
     saveTrans(trans);
@@ -1128,9 +1149,14 @@ function openMod(id){
   document.getElementById('m-r').value=p?p.paid:0;
   document.getElementById('m-rt').value=p?p.rt:'G';
   document.getElementById('m-cobr').value=gE(id,'cobrDt',p?p.cobrDt||'':'');
+  var pw=document.getElementById('m-parc-wrap');if(pw)pw.style.display='block';
   document.getElementById('m-del').style.display=id?'':'none';
   document.getElementById('m-recv-dt').value=new Date().toISOString().slice(0,10);
   document.getElementById('m-recv-v').value='';
+  _editParc=(p&&p.parcelas)?p.parcelas.map(function(pr){return Object.assign({},pr);}):[];
+  document.getElementById('pg-v').value=p?p.val:'';
+  document.getElementById('pg-dt').value=new Date().toISOString().slice(0,10);
+  setTimeout(renderParcEditor,0);
   var parcSec=document.getElementById('m-parc-sec');
   var parcList=document.getElementById('m-parc-list');
   if(p&&p.parcelas&&p.parcelas.length){
@@ -1153,14 +1179,50 @@ function openMod(id){
   document.getElementById('mb').classList.add('on');
 }
 function selecionarParcela(idx){
-  var id=document.getElementById('m-id').value;
-  var proj=getProj().filter(function(x){return x.id===id;})[0];
-  if(!proj||!proj.parcelas)return;
-  var pr=proj.parcelas[idx];
+  var pr=_editParc[idx];
+  if(!pr)return;
   document.getElementById('m-recv-v').value=pr.v;
   document.getElementById('m-recv-dt').value=pr.dt||new Date().toISOString().slice(0,10);
   document.getElementById('m-recv-v').focus();
 }
+function renderParcEditor(){
+  var ed=document.getElementById('parc-editor');if(!ed)return;
+  var id=document.getElementById('m-id').value;
+  var proj=id?getProj().filter(function(x){return x.id===id;})[0]:null;
+  var parc=_editParc;
+  ed.innerHTML=parc.map(function(pr,i){
+    return'<div class="parc-ed-row">'+ 
+      '<input value="'+pr.n+'" onchange="_editParc['+i+'].n=this.value" style="max-width:55px" placeholder="Nº">'+ 
+      '<input type="number" value="'+pr.v+'" onchange="_editParc['+i+'].v=+this.value" placeholder="R$">'+ 
+      '<input type="date" value="'+(pr.dt||'')+'" title="Vencimento" onchange="_editParc['+i+'].dt=this.value">'+ 
+      (pr.ok?'<input type="date" title="Recebido em" value="'+(pr.dtr||pr.dt||'')+'" style="border-color:#059669;background:#f0fdf4" onchange="_editParc['+i+'].dtr=this.value">':'')+ 
+      (pr.ok?'<span style="color:#059669;font-size:11px;font-weight:700">✓ Pago</span>':'')+ 
+      (pr.ok?'<button class="parc-rm" style="background:#fef3c7;color:#92400e" onclick="_editParc['+i+'].ok=false;renderParcEditor()">Estornar</button>':'')+ 
+      (!pr.ok?'<button class="parc-rm" onclick="_editParc.splice('+i+',1);renderParcEditor()">✕</button>':'')+ 
+    '</div>';
+  }).join('');
+}
+function gerarParcelas(){
+  var n=+document.getElementById('pg-n').value||3;
+  var tot=+document.getElementById('pg-v').value||+document.getElementById('m-v').value||0;
+  var dt=document.getElementById('pg-dt').value||new Date().toISOString().slice(0,10);
+  var base=Math.floor(tot/n);var resto=tot-base*(n-1);
+  _editParc=[];
+  for(var i=0;i<n;i++){
+    var d=new Date(dt+'T12:00:00');
+    d.setMonth(d.getMonth()+i);
+    var ds=d.toISOString().slice(0,10);
+    var ord=['1ª','2ª','3ª','4ª','5ª','6ª'];
+    _editParc.push({n:ord[i]||((i+1)+'ª'),v:i===n-1?resto:base,dt:ds,ok:false});
+  }
+  renderParcEditor();
+}
+function addParcRow(){
+  var ord=['1ª','2ª','3ª','4ª','5ª','6ª'];
+  _editParc.push({n:ord[_editParc.length]||(_editParc.length+1+'ª'),v:0,dt:'',ok:false});
+  renderParcEditor();
+}
+var _editParc=[];
 function registrarRecebimento(){
   var id=document.getElementById('m-id').value;
   var vl=+document.getElementById('m-recv-v').value;
@@ -1170,15 +1232,15 @@ function registrarRecebimento(){
   if(!proj)return;
   var d=load();
   var parc=(proj.parcelas||[]).map(function(pr){return Object.assign({},pr);});
+  var tid='tr-'+Date.now();
   for(var i=0;i<parc.length;i++){
-    if(!parc[i].ok&&+parc[i].v===vl){parc[i].ok=true;break;}
+    if(!parc[i].ok&&+parc[i].v===vl){parc[i].ok=true;parc[i].dtr=dt;parc[i].tid=tid;break;}
   }
   var paid=parc.length?parc.reduce(function(s,pr){return s+(pr.ok?pr.v:0);},0):(+(proj.paid||0))+vl;
   if(!d[id])d[id]={};
   if(parc.length)d[id].parcelas=parc;
   d[id].paid=paid;
   save(d);
-  var tid='tr-'+Date.now();
   var newT={id:tid,dt:dt,dtr:dt,tp:'entrada',cl:proj.n+(proj.f?' — '+proj.f:''),desc:'Recebimento — '+proj.n+(proj.f?' / '+proj.f:''),vl:vl,st:'recebido',cat:'consultoria',rt:proj.rt||'G',obs:'',_ts:new Date().toISOString()};
   var trans=getTrans();trans.unshift(newT);
   trans.sort(function(a,b){return b.dt.localeCompare(a.dt);});
@@ -1197,7 +1259,19 @@ function criarDeUrgencia(efIdx, stage){
   var d=load();d[id]=obj;save(d);
   buildExec();
   openMod(id);
-  toast('Projeto criado — '+(pipe?pipe.label:stage));
+  toast('Projeto criado — '+(pipe?pipe.label:stage)+' — defina as parcelas');
+  setTimeout(function(){
+    var sec=document.getElementById('parc-editor');
+    if(sec){
+      sec.scrollIntoView({behavior:'smooth',block:'center'});
+      var nIn=document.getElementById('pg-n');
+      var vIn=document.getElementById('pg-v');
+      var dIn=document.getElementById('pg-dt');
+      if(nIn)nIn.focus();
+      var today=new Date();
+      if(dIn&&!dIn.value)dIn.value=today.toISOString().slice(0,10);
+    }
+  },120);
 }
 // close dropdowns when clicking outside
 document.addEventListener('click',function(ev){
@@ -1208,8 +1282,21 @@ document.addEventListener('click',function(ev){
 function closeMod(){document.getElementById('mb').classList.remove('on');}
 function saveMod(){
   var id=document.getElementById('m-id').value;var isNew=id.startsWith('cx');
-  var obj={id:id,n:document.getElementById('m-n').value,f:document.getElementById('m-f').value,stage:document.getElementById('m-s').value,next:document.getElementById('m-p').value,val:+document.getElementById('m-v').value,paid:+document.getElementById('m-r').value,rt:document.getElementById('m-rt').value,cobrDt:document.getElementById('m-cobr').value,_ts:new Date().toISOString()};
+  var parcToSave=_editParc.filter(function(pr){return pr.v>0||pr.dt;});
+  var paidCalc=parcToSave.length?parcToSave.reduce(function(s,pr){return s+(pr.ok?+pr.v:0);},0):+document.getElementById('m-r').value;
+  var obj={id:id,n:document.getElementById('m-n').value,f:document.getElementById('m-f').value,stage:document.getElementById('m-s').value,next:document.getElementById('m-p').value,val:+document.getElementById('m-v').value,paid:paidCalc,rt:document.getElementById('m-rt').value,cobrDt:document.getElementById('m-cobr').value,parcelas:parcToSave.length?parcToSave:undefined,_ts:new Date().toISOString()};
   var d=load();if(isNew)d[id]=obj;else{if(!d[id])d[id]={};Object.assign(d[id],obj);}save(d);
+  // update linked transactions if dtr changed
+  var trans=getTrans();
+  var changed=false;
+  parcToSave.forEach(function(pr){
+    if(pr.tid&&pr.dtr){
+      trans.forEach(function(t){
+        if(t.id===pr.tid&&t.dt!==pr.dtr){t.dt=pr.dtr;t.dtr=pr.dtr;changed=true;}
+      });
+    }
+  });
+  if(changed){trans.sort(function(a,b){return b.dt.localeCompare(a.dt);});saveTrans(trans);}
   closeMod();buildExec();toast('Projeto salvo');
 }
 function delProj(){var id=document.getElementById('m-id').value;if(id.startsWith('cx')){var d=load();delete d[id];save(d);}else sE(id,'stage','deleted');closeMod();buildExec();}
