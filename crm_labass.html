@@ -1252,7 +1252,19 @@ function criarDeUrgencia(efIdx, stage){
   var d=load();d[id]=obj;save(d);
   buildExec();
   openMod(id);
-  toast('Projeto criado — '+(pipe?pipe.label:stage));
+  toast('Projeto criado — '+(pipe?pipe.label:stage)+' — defina as parcelas');
+  setTimeout(function(){
+    var sec=document.getElementById('parc-editor');
+    if(sec){
+      sec.scrollIntoView({behavior:'smooth',block:'center'});
+      var nIn=document.getElementById('pg-n');
+      var vIn=document.getElementById('pg-v');
+      var dIn=document.getElementById('pg-dt');
+      if(nIn)nIn.focus();
+      var today=new Date();
+      if(dIn&&!dIn.value)dIn.value=today.toISOString().slice(0,10);
+    }
+  },120);
 }
 // close dropdowns when clicking outside
 document.addEventListener('click',function(ev){
