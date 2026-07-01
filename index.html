@@ -1027,7 +1027,7 @@ function buildExec(){
       if(rem>0&&cobrDtV&&cobrDtV<todayStr)vencidas+=rem;
     }
   });
-  var urgN=EF_ALL.filter(function(e){var a=daysTo(e.art),t=daysTo(e.ates);return(a!==null&&a<=90)||(t!==null&&t<=90);}).length;
+  var urgN=EF_ALL.filter(function(e){var a=daysTo(e.art),t=daysTo(e.ates);return(a!==null&&a<=30)||(t!==null&&t<=90);}).length;
   // Monthly forecast from parcelas
   var MN=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   var moMap={};
@@ -1068,14 +1068,14 @@ function buildExec(){
     (vencidas>0?'<div class="kpi r" style="cursor:pointer" title="Parcelas/cobranças vencidas"><div class="kl">⚠ A cobrar (vencido)</div><div class="kv" style="font-size:15px">'+curr(vencidas)+'</div></div>':'')+
     moCards+
     '<div class="kpi r"><div class="kl">Renovações (90d)</div><div class="kv">'+urgN+'</div></div>';
-  var urg=EF_ALL.filter(function(e){var a=daysTo(e.art),t=daysTo(e.ates);return(a!==null&&a<=90)||(t!==null&&t<=90);});
+  var urg=EF_ALL.filter(function(e){var a=daysTo(e.art),t=daysTo(e.ates);return(a!==null&&a<=30)||(t!==null&&t<=90);});
   var uHtml='';
   if(urg.length){
     var projFazendas=proj.map(function(p){return p.f.toLowerCase();});
     uHtml='<div class="st">Renovações eFazenda (próximos 90 dias)</div>'+urg.map(function(e){
       var a=daysTo(e.art),t=daysTo(e.ates);var parts=[];
       if(a!==null&&a<=30)parts.push('ART vence '+fmtDMY(e.art)+' ('+(a<0?'vencida '+Math.abs(a)+'d':a+'d')+') &middot; R$1.800');
-      if(t!==null&&t<=60)parts.push('Atestado vence '+fmtDMY(e.ates)+' ('+(t<0?'vencido '+Math.abs(t)+'d':t+'d')+') &middot; R$3.200');
+      if(t!==null&&t<=90)parts.push('Atestado vence '+fmtDMY(e.ates)+' ('+(t<0?'vencido '+Math.abs(t)+'d':t+'d')+') &middot; R$3.200');
       var ei=EF_ALL.indexOf(e);
       var stageOpts=PIPELINE.filter(function(pp){return pp.key!=='concluido';}).map(function(pp){
         return'<div class="urg-drop-item" onclick="criarDeUrgencia('+ei+',\''+pp.key+'\');this.closest(\'.urg-drop\').classList.remove(\'open\')">'+ 
