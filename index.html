@@ -184,6 +184,9 @@ tr:hover td{background:#fafbfe}
 .initren-btn:hover{background:#dcfce7}
 .ren-tipo-art .kpipe-card{border-top-color:#f59e0b!important}
 .ren-tipo-ates .kpipe-card{border-top-color:#8b5cf6!important}
+.al.urg[draggable]{cursor:grab}
+.al.urg.dragging{opacity:.4;cursor:grabbing}
+.al.urg-drag-hint{font-size:10px;color:#94a3b8;text-align:center;padding:4px 0 2px;letter-spacing:.3px}
 </style>
 </head>
 <body>
@@ -816,6 +819,12 @@ function toggleParc(projId,idx,ev){
 }
 
 var _dragId=null;
+var _dragEfIdx=null;
+function kdragEf(e,idx){
+  _dragId=null;_dragEfIdx=idx;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='copy';
+}
 function kdragStart(e,id){
   _dragId=id;
   e.currentTarget.classList.add('dragging');
@@ -826,9 +835,20 @@ function kdragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
 function kdrop(e,colEl,stage){
   e.preventDefault();
   document.querySelectorAll('.kpipe-col').forEach(function(c){c.classList.remove('drag-over');});
+  var pipe=PIPELINE.filter(function(p){return p.key===stage;})[0];
+  if(_dragEfIdx!==null){
+    var ef=EF_ALL[_dragEfIdx];_dragEfIdx=null;
+    if(!ef)return;
+    var id='cx-'+Date.now();
+    var obj={id:id,n:ef.p,f:ef.f,stage:stage,next:'',val:0,paid:0,rt:ef.rt,_ts:new Date().toISOString()};
+    var d=load();d[id]=obj;save(d);
+    buildExec();
+    toast('+ Projeto criado em '+(pipe?pipe.label:stage));
+    openMod(id);
+    return;
+  }
   if(!_dragId)return;
   sE(_dragId,'stage',stage);
-  var pipe=PIPELINE.filter(function(p){return p.key===stage;})[0];
   _dragId=null;
   buildExec();
   toast('→ '+(pipe?pipe.label:stage));
@@ -956,11 +976,19 @@ function buildExec(){
   var urg=EF_ALL.filter(function(e){var a=daysTo(e.art),t=daysTo(e.ates);return(a!==null&&a<=30)||(t!==null&&t<=60);});
   var uHtml='';
   if(urg.length){
-    uHtml='<div class="st">Urgências eFazenda</div>'+urg.map(function(e){
+    uHtml='<div class="st">Urgências eFazenda</div><div class="urg-drag-hint">Arraste para o kanban abaixo ↓</div>'+urg.map(function(e){
       var a=daysTo(e.art),t=daysTo(e.ates);var parts=[];
       if(a!==null&&a<=30)parts.push('ART vence '+fmtDMY(e.art)+' ('+(a<0?'vencida '+Math.abs(a)+'d':a+'d')+') &middot; R$1.800');
       if(t!==null&&t<=60)parts.push('Atestado vence '+fmtDMY(e.ates)+' ('+(t<0?'vencido '+Math.abs(t)+'d':t+'d')+') &middot; R$3.200');
-      return'<div class="al urg"><div class="al-dot urg"></div><div style="flex:1"><div class="al-n">'+tc(e.p)+rtB(e.rt)+'</div><div class="al-d">'+tc(e.f)+' &middot; '+tc(e.m)+'</div></div><div style="font-size:11px;color:#dc2626;text-align:right">'+parts.join('<br>')+'</div></div>';
+      var ei=EF_ALL.indexOf(e);
+      return'<div class="al urg" draggable="true"'+
+        ' ondragstart="kdragEf(event,'+ei+')"'+
+        ' ondragend="this.classList.remove(\'dragging\')">'+ 
+        '<div class="al-dot urg"></div>'+ 
+        '<div style="flex:1"><div class="al-n">'+tc(e.p)+rtB(e.rt)+'</div>'+ 
+        '<div class="al-d">'+tc(e.f)+' &middot; '+tc(e.m)+'</div></div>'+ 
+        '<div style="font-size:11px;color:#dc2626;text-align:right">'+parts.join('<br>')+'</div>'+ 
+        '</div>';
     }).join('');
   }
   document.getElementById('exec-urg-sec').innerHTML=uHtml;
