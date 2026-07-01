@@ -282,7 +282,7 @@ tr:hover td{background:#fafbfe}
     <div class="mf"><label>Recebido (R$)</label><input id="m-r" type="number" min="0"></div>
   </div>
   <div class="mf"><label>Data de Cobrança</label><input id="m-cobr" type="date"></div>
-  <div style="border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px">
+  <div id="m-parc-wrap" style="border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px">
     <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px">Parcelas</div>
     <div class="parc-gen-row">
       <div class="mf"><label>Qtd</label><input id="pg-n" type="number" min="1" max="12" value="3" style="width:100%"></div>
@@ -1149,6 +1149,7 @@ function openMod(id){
   document.getElementById('m-r').value=p?p.paid:0;
   document.getElementById('m-rt').value=p?p.rt:'G';
   document.getElementById('m-cobr').value=gE(id,'cobrDt',p?p.cobrDt||'':'');
+  var pw=document.getElementById('m-parc-wrap');if(pw)pw.style.display='block';
   document.getElementById('m-del').style.display=id?'':'none';
   document.getElementById('m-recv-dt').value=new Date().toISOString().slice(0,10);
   document.getElementById('m-recv-v').value='';
